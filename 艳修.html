@@ -1,0 +1,3249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>合欢宗修炼模拟器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#a9b688',
+            secondary: '#9ED2BE',
+            tertiary: '#9EC3FF',
+            quaternary: '#FFD591',
+            background: '#FFF5F7',
+            text: '#5A4B60',
+          },
+          fontFamily: {
+            sans: ['Microsoft YaHei', 'SimHei', 'Arial', 'sans-serif'],
+          },
+          animation: {
+            'bounce-slow': 'bounce 3s infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'fade-in': 'fadeIn 0.3s ease-in',
+            'slide-up': 'slideUp 0.3s ease-out',
+            'float-slow': 'floatSlow 8s ease-in-out infinite',
+            'pulse-slow': 'pulseSlow 4s ease-in-out infinite',
+            'spin-slow': 'spinSlow 20s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            floatSlow: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(10px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            pulseSlow: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.7' },
+            },
+            spinSlow: {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .text-shadow {
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .card-shadow {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+      .btn-shadow {
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+      }
+      .glow {
+        box-shadow: 0 0 10px rgba(169, 182, 136, 0.3);
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      .glass-dark {
+        background: rgba(90, 75, 96, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .text-gradient {
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        background-image: linear-gradient(135deg, #a9b688, #9ED2BE);
+      }
+      .bg-gradient-primary {
+        background-image: linear-gradient(135deg, #a9b688, #9ED2BE);
+      }
+      .bg-gradient-secondary {
+        background-image: linear-gradient(135deg, #9EC3FF, #FFD591);
+      }
+      .bg-gradient-accent {
+        background-image: linear-gradient(135deg, #FFD591, #FFB6C1);
+      }
+      .border-gradient {
+        border-image: linear-gradient(135deg, #a9b688, #9ED2BE) 1;
+      }
+      .animate-float {
+        animation: float 6s ease-in-out infinite;
+      }
+      .animate-float-slow {
+        animation: floatSlow 8s ease-in-out infinite;
+      }
+      .animate-pulse-slow {
+        animation: pulseSlow 4s ease-in-out infinite;
+      }
+      .animate-spin-slow {
+        animation: spinSlow 20s linear infinite;
+      }
+    }
+    
+    body {
+      background: linear-gradient(135deg, #FFF5F7 0%, #f5f0f8 100%);
+      color: theme('colors.text');
+      font-family: theme('fontFamily.sans');
+      overflow-x: hidden;
+    }
+    
+    .app-container {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+      background-color: #fff;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-bar {
+      height: 8px;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    
+    .btn {
+      transition: all 0.3s ease;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    }
+    
+    .event-card {
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    .notification {
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    .page-content {
+      display: none;
+    }
+    
+    .page-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in;
+    }
+    
+    .bg-pattern {
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23a9b688' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    
+    .bg-overlay {
+      background: linear-gradient(to bottom, rgba(255, 245, 247, 0.8), rgba(255, 245, 247, 0.95));
+    }
+    
+    .character-avatar {
+      position: relative;
+      overflow: hidden;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      border: 3px solid #fff;
+      box-shadow: 0 0 15px rgba(169, 182, 136, 0.3);
+    }
+    
+    .character-avatar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 50%;
+      box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+    }
+    
+    .npc-avatar {
+      position: relative;
+      overflow: hidden;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px rgba(169, 182, 136, 0.2);
+    }
+    
+    .bg-scene {
+      background-image: url('https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/c234ed4ffd8b45b58077b26952357c6f~tplv-a9rns2rl98-image.image?rcl=20251107154009649CA6622D232BA389A9&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1765093230&x-signature=SQuaHmV4GOHG85UY0b1IKKkQeH0%3D');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    
+    .scene-overlay {
+      background: linear-gradient(to bottom, rgba(255, 245, 247, 0.7), rgba(255, 245, 247, 0.9));
+    }
+    
+    .particle {
+      position: absolute;
+      background-color: rgba(255, 182, 193, 0.5);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    
+    .skill-card {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .skill-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+      opacity: 0;
+    }
+    
+    @keyframes shine {
+      0% {
+        transform: translateX(-100%) rotate(45deg);
+        opacity: 0;
+      }
+      50% {
+        opacity: 0.3;
+      }
+      100% {
+        transform: translateX(100%) rotate(45deg);
+        opacity: 0;
+      }
+    }
+    
+    .skill-card:hover::before {
+      animation: shine 1.5s infinite;
+    }
+    
+    .item-card {
+      transition: all 0.3s ease;
+    }
+    
+    .item-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .nav-btn {
+      transition: all 0.3s ease;
+    }
+    
+    .nav-btn.active {
+      position: relative;
+    }
+    
+    .nav-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 3px;
+      background-color: theme('colors.primary');
+      border-radius: 3px;
+    }
+    
+    .modal-content {
+      max-height: 70vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: theme('colors.primary') transparent;
+    }
+    
+    .modal-content::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .modal-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .modal-content::-webkit-scrollbar-thumb {
+      background-color: theme('colors.primary');
+      border-radius: 20px;
+    }
+    
+    /* 坊市特殊布局：固定头部和底部，中间滚动 */
+    .modal-content .market-scroll-area::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .modal-content .market-scroll-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    .modal-content .market-scroll-area::-webkit-scrollbar-thumb {
+      background-color: theme('colors.primary');
+      border-radius: 20px;
+    }
+    
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.5s ease;
+      transform-origin: 50% 50%;
+    }
+    
+    .floating-element {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    .floating-element:nth-child(2) {
+      animation-delay: 1s;
+    }
+    
+    .floating-element:nth-child(3) {
+      animation-delay: 2s;
+    }
+    
+    .floating-element:nth-child(4) {
+      animation-delay: 3s;
+    }
+    
+    .floating-element:nth-child(5) {
+      animation-delay: 4s;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container bg-pattern">
+    <!-- 背景层 -->
+    <div class="fixed inset-0 bg-scene opacity-10 z-0"></div>
+    
+    <!-- 顶部标题栏 -->
+    <header class="bg-gradient-primary text-white p-4 text-center shadow-lg relative z-10">
+      <h1 class="text-2xl font-bold text-shadow">🌸 合欢宗修炼模拟器</h1>
+      <div class="mt-2 text-sm opacity-90" id="time-display">第1天·清晨·辰时</div>
+    </header>
+
+    <!-- 主页面 -->
+    <main id="main-page" class="page-content active p-4 pb-24 relative z-10">
+      <!-- 角色属性面板 -->
+      <div id="stats-panel" class="bg-white rounded-xl p-4 mb-4 card-shadow overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-primary rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/2"></div>
+        
+        <div class="flex items-center mb-4">
+          <div class="character-avatar mr-4 animate-float-slow">
+            <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/5dd840c7fa864d8085a29f67d2e7098b~tplv-a9rns2rl98-image.image?rcl=20251107154009649CA6622D232BA389A9&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1765093240&x-signature=WBhHVqE%2BtB9wcbdMcbtEUbbYPhs%3D" 
+                 alt="角色头像" class="w-full h-full object-cover">
+          </div>
+          <div class="flex-1">
+            <h2 class="text-lg font-bold text-primary">📊 角色属性</h2>
+            <div class="flex justify-between mt-1">
+              <span>【姓名】</span>
+              <span id="character-name" class="font-bold text-primary">桃夭</span>
+            </div>
+            <div class="flex justify-between">
+              <span>【性别】</span>
+              <span id="character-gender" class="font-bold">女</span>
+            </div>
+            <div class="flex justify-between">
+              <span>【体质】</span>
+              <span id="constitution" class="font-bold text-pink-500">天生媚骨</span>
+            </div>
+            <div class="flex justify-between" id="pregnancy-status" style="display: none;">
+              <span>【身孕🤰】</span>
+              <span id="pregnancy-info" class="font-bold text-pink-600"></span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="space-y-3 text-sm">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>【寿元👤】</span>
+              <span id="lifespan-value">18/100</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div id="lifespan-bar" class="stat-bar bg-gradient-to-r from-red-400 to-red-500" style="width: 18%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>【修为📊】</span>
+              <span id="cultivation-level">炼气初期 (75/100)</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div id="cultivation-bar" class="stat-bar bg-gradient-to-r from-purple-400 to-purple-600" style="width: 75%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>【魅力🌸】</span>
+              <span id="charm-value">70/100</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div id="charm-bar" class="stat-bar bg-gradient-to-r from-pink-400 to-pink-600" style="width: 70%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>【根骨🦵】</span>
+              <span id="talent-value">15/100</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div id="talent-bar" class="stat-bar bg-gradient-to-r from-blue-400 to-blue-600" style="width: 15%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>【悟性🧠】</span>
+              <span id="wisdom-value">10/100</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div id="wisdom-bar" class="stat-bar bg-gradient-to-r from-indigo-400 to-indigo-600" style="width: 10%"></div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-3 gap-2 mt-2">
+            <div class="bg-pink-50 rounded-lg p-2 text-center">
+              <div class="text-xs text-gray-600">灵力💧</div>
+              <div id="spiritual-power" class="font-bold text-pink-600">20/20</div>
+            </div>
+            <div class="bg-green-50 rounded-lg p-2 text-center">
+              <div class="text-xs text-gray-600">体魄💪</div>
+              <div id="physique" class="font-bold text-green-600">10/10</div>
+            </div>
+            <div class="bg-red-50 rounded-lg p-2 text-center">
+              <div class="text-xs text-gray-600">业障🎭</div>
+              <div id="karma" class="font-bold text-red-600">0/100</div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <div class="bg-purple-50 rounded-lg p-2 text-center">
+              <div class="text-xs text-gray-600">艳名✨</div>
+              <div id="reputation" class="font-bold text-purple-600">5/100 (默默无闻)</div>
+            </div>
+            <div class="bg-yellow-50 rounded-lg p-2 text-center">
+              <div class="text-xs text-gray-600">灵石💰</div>
+              <div id="spirit-stones" class="font-bold text-yellow-600">500</div>
+            </div>
+          </div>
+          
+          <!-- 子嗣列表 -->
+          <div id="children-section" class="mt-3" style="display: none;">
+            <div class="text-xs text-gray-600 mb-1">👨‍👩‍👧‍👦 子嗣</div>
+            <div id="children-list">
+              <!-- 子嗣列表将通过JS动态生成 -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 当前事件面板 -->
+      <div id="event-panel" class="bg-white rounded-xl p-4 mb-4 card-shadow event-card overflow-hidden relative">
+        <div class="absolute top-0 left-0 w-full h-full bg-gradient-accent opacity-5"></div>
+        <div class="relative z-10">
+          <h2 class="text-lg font-bold mb-3 text-primary">📜 当前场景</h2>
+          <div id="event-content" class="text-sm leading-relaxed mb-4 text-gray-700 bg-white bg-opacity-70 p-3 rounded-lg">
+            <p>你从鲛绡纱帐中醒来，扫过身侧酣睡的剑宗首席弟子（昨夜双修对象）。窗外飞来师尊传讯符告知你三日后蓬莱仙宴尽是上佳炉鼎。</p>
+          </div>
+          <div id="event-choices" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- 行动面板 -->
+      <div id="action-panel" class="bg-white rounded-xl p-4 card-shadow overflow-hidden relative">
+        <div class="absolute bottom-0 right-0 w-32 h-32 bg-gradient-secondary rounded-full filter blur-3xl opacity-10 translate-y-1/2 translate-x-1/2"></div>
+        <div class="relative z-10">
+          <h2 class="text-lg font-bold mb-3 text-primary">⚡ 选择行动</h2>
+          <div class="grid grid-cols-2 gap-3" id="action-buttons">
+            <!-- 行动按钮将通过JS动态生成 -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- NPC页面 -->
+    <div id="npc-page" class="page-content p-4 pb-24 relative z-10">
+      <div class="bg-white rounded-xl p-4 card-shadow mb-4 overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-accent rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/2"></div>
+        <div class="relative z-10">
+          <h2 class="text-lg font-bold mb-3 text-primary">💖 因缘录</h2>
+          <div id="npc-list">
+            <!-- NPC列表将通过JS动态生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 功法页面 -->
+    <div id="skill-page" class="page-content p-4 pb-24 relative z-10">
+      <div class="bg-white rounded-xl p-4 card-shadow mb-4 overflow-hidden relative">
+        <div class="absolute top-0 left-0 w-32 h-32 bg-gradient-primary rounded-full filter blur-3xl opacity-10 -translate-y-1/2 -translate-x-1/2"></div>
+        <div class="relative z-10">
+          <h2 class="text-lg font-bold mb-3 text-primary">🧾 功法秘籍</h2>
+          <div id="skill-list" class="space-y-3">
+            <!-- 功法列表将通过JS动态生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 物品页面 -->
+    <div id="item-page" class="page-content p-4 pb-24 relative z-10">
+      <div class="bg-white rounded-xl p-4 card-shadow mb-4 overflow-hidden relative">
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-gradient-secondary rounded-full filter blur-3xl opacity-10 translate-y-1/2 -translate-x-1/2"></div>
+        <div class="relative z-10">
+          <h2 class="text-lg font-bold mb-3 text-primary">🧰 物品栏</h2>
+          <div id="item-list" class="space-y-3">
+            <!-- 物品列表将通过JS动态生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置页面 -->
+    <div id="settings-page" class="page-content p-4 pb-24 relative z-10">
+      <div class="bg-white rounded-xl p-4 card-shadow mb-4 overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-primary rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/2"></div>
+        <div class="relative z-10">
+          <h2 class="text-lg font-bold mb-4 text-primary">⚙️ 设置</h2>
+          
+          <!-- 游戏管理 -->
+          <div class="bg-red-50 rounded-lg p-4 mb-4 border border-red-200">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center">
+                <svg class="w-6 h-6 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                <div>
+                  <h3 class="font-medium text-red-600">游戏管理</h3>
+                  <p class="text-xs text-gray-600">重新开始游戏</p>
+                </div>
+              </div>
+              <button id="restart-game-btn" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors">
+                重新开始
+              </button>
+            </div>
+            <p class="text-xs text-red-400 mt-2">⚠️ 此操作将删除所有游戏数据，不可恢复</p>
+          </div>
+          
+          <!-- 数据管理 -->
+          <div class="bg-white rounded-lg p-4 border-2 border-primary card-shadow">
+            <div class="flex items-center mb-3">
+              <div class="w-10 h-10 bg-primary bg-opacity-20 rounded-full flex items-center justify-center mr-3">
+                <svg class="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="font-medium text-primary">数据管理</h3>
+                <p class="text-xs text-gray-600">导出/导入游戏数据</p>
+              </div>
+            </div>
+            <div class="flex space-x-2 mb-2">
+              <button id="export-data-btn" class="flex-1 bg-primary hover:bg-opacity-90 text-white px-3 py-2 rounded-lg font-medium text-sm btn-shadow transition-all">
+                导出数据
+              </button>
+              <button id="import-data-btn" class="flex-1 bg-secondary hover:bg-opacity-90 text-white px-3 py-2 rounded-lg font-medium text-sm btn-shadow transition-all">
+                导入数据
+              </button>
+            </div>
+            <input type="file" id="import-data-file" accept=".json" class="hidden">
+            <p class="text-xs text-gray-400 mt-2">导出数据可备份游戏进度，导入数据可恢复游戏进度</p>
+          </div>
+          
+          <!-- 快捷操作 -->
+          <div class="bg-gray-50 rounded-lg p-4 mt-4 border border-gray-200">
+            <h3 class="font-medium text-gray-700 mb-3">快捷操作</h3>
+            <button onclick="game.nextMonth()" class="w-full bg-gradient-primary hover:bg-opacity-90 text-white px-4 py-2 rounded-lg font-medium text-sm btn-shadow transition-all mb-2">
+              ⏭️ 下一月
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 子嗣详情页面 -->
+    <div id="child-page" class="page-content p-4 pb-24 relative z-10">
+      <div class="bg-white rounded-xl p-4 card-shadow mb-4 overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-accent rounded-full filter blur-3xl opacity-10 -translate-y-1/2 translate-x-1/2"></div>
+        <div class="relative z-10">
+          <div class="flex items-center mb-4">
+            <button onclick="showPage('main', null)" class="mr-3 text-gray-500 hover:text-primary transition-colors">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+              </svg>
+            </button>
+            <h2 class="text-lg font-bold text-primary">👨‍👩‍👧‍👦 子嗣详情</h2>
+          </div>
+          <div id="child-detail-content">
+            <!-- 子嗣详情内容将通过JS动态生成 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <nav class="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 shadow-lg z-20">
+      <div class="flex justify-around items-center h-16">
+        <button class="nav-btn active flex flex-col items-center justify-center px-4 py-2 text-primary" onclick="showPage('main', event)">
+          <span class="text-xl mb-1">🏠</span>
+          <span class="text-xs">主页</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center justify-center px-4 py-2 text-gray-500" onclick="showPage('npc', event)">
+          <span class="text-xl mb-1">💖</span>
+          <span class="text-xs">因缘录</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center justify-center px-4 py-2 text-gray-500" onclick="showPage('skill', event)">
+          <span class="text-xl mb-1">🧾</span>
+          <span class="text-xs">功法</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center justify-center px-4 py-2 text-gray-500" onclick="showPage('item', event)">
+          <span class="text-xl mb-1">🧰</span>
+          <span class="text-xs">物品</span>
+        </button>
+        <button class="nav-btn flex flex-col items-center justify-center px-4 py-2 text-gray-500" onclick="showPage('settings', event)">
+          <span class="text-xl mb-1">⚙️</span>
+          <span class="text-xs">设置</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- 通知区域 -->
+    <div id="notification-area" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-11/12 max-w-md"></div>
+
+    <!-- 模态框 -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+      <div class="bg-white rounded-xl p-6 max-w-md w-11/12 max-h-85vh overflow-y-auto">
+        <div id="modal-content" class="modal-content"></div>
+        <div class="modal-footer-area mt-4 flex justify-end">
+          <button onclick="closeModal()" class="btn bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 重新开始游戏确认弹框 -->
+    <div id="restart-game-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+      <div class="bg-white rounded-xl p-6 max-w-md w-11/12">
+        <h3 class="text-xl font-bold mb-4 text-gray-800">确认重新开始游戏</h3>
+        <p class="text-gray-600 mb-6">您确定要重新开始游戏吗？此操作将删除所有游戏数据，包括角色属性、NPC、功法、物品和进度，且不可恢复！</p>
+        <div class="flex justify-end space-x-3">
+          <button id="cancel-restart" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">取消</button>
+          <button id="confirm-restart" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">确认重新开始</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 游戏核心类
+    const game = {
+      // 游戏状态
+      state: {
+        day: 1,
+        time: '辰时',
+        turn: 0,
+        character: {
+          name: '桃夭',
+          gender: '女',
+          lifespan: { current: 18, max: 100 },
+          constitution: { type: '天生媚骨', desc: '与异性/同性双修时，双方情欲能量纯度+20%' },
+          cultivation: { level: '炼气初期', progress: 75, max: 100 },
+          charm: 70,
+          talent: 15,
+          wisdom: 10,
+          spiritualPower: { current: 20, max: 20 },
+          physique: { current: 20, max: 20 },
+          karma: 0,
+          reputation: { value: 5, desc: '默默无闻' },
+          spiritStones: 500,
+          status: '健康',
+          pregnancy: { isPregnant: false, month: 0, father: null, startDay: 0 },
+          children: []
+        },
+        npcs: [],
+        skills: [
+          { name: '阴阳和合心经', level: 50, max: 100, desc: '合欢宗基础心法，修炼速度+10%' },
+          { name: '姹女心经', level: 0, max: 100, desc: '适合女性修炼的秘法，魅力+5，采补时效果提升15%' },
+          { name: '素女心经', level: 0, max: 100, desc: '上古传下的双修秘法，可与多人同修，效果提升10%' }
+        ],
+        items: [
+          { name: '合欢宗弟子令牌', type: '令牌', count: 1, desc: '合欢宗身份象征' },
+          { name: '媚术铃', type: '法器', count: 1, desc: '使用后可提升魅力' }
+        ],
+        history: []
+      },
+
+      // 境界列表
+      cultivationLevels: [
+        { name: '炼气初期', max: 100, next: '炼气中期' },
+        { name: '炼气中期', max: 200, next: '炼气后期' },
+        { name: '炼气后期', max: 300, next: '筑基初期' },
+        { name: '筑基初期', max: 500, next: '筑基中期' },
+        { name: '筑基中期', max: 800, next: '筑基后期' },
+        { name: '筑基后期', max: 1200, next: '金丹初期' },
+        { name: '金丹初期', max: 2000, next: '金丹中期' },
+        { name: '金丹中期', max: 3000, next: '金丹后期' },
+        { name: '金丹后期', max: 5000, next: '元婴初期' },
+        { name: '元婴初期', max: 8000, next: '元婴中期' },
+        { name: '元婴中期', max: 12000, next: '元婴后期' },
+        { name: '元婴后期', max: 20000, next: '化神初期' },
+        { name: '化神初期', max: 30000, next: '化神中期' },
+        { name: '化神中期', max: 50000, next: '化神后期' },
+        { name: '化神后期', max: 80000, next: '渡劫期' },
+        { name: '渡劫期', max: 100000, next: '飞升' }
+      ],
+
+      // 行动列表
+      actions: [
+        { id: 'cultivate', name: '📚 功法修炼', desc: '消耗时间修炼功法，提升修为', cost: { time: 1 } },
+        { id: 'dualCultivate', name: '🛏️ 双修/多修', desc: '与NPC进行双修，大幅提升修为', cost: { time: 1, physique: 1 } },
+        { id: 'extract', name: '💋 采补', desc: '采补NPC修为，可能增加业障', cost: { time: 1, physique: 2 } },
+        { id: 'bath', name: '♨️ 醉梦池沐浴', desc: '恢复灵力，可能遇到NPC', cost: { time: 1 } },
+        { id: 'market', name: '🎐 逛宗门市集', desc: '购买丹药、法器、材料', cost: { time: 1 } },
+        { id: 'mission', name: '📋 宗门任务', desc: '接取任务获得贡献点和资源', cost: { time: 1 } },
+        { id: 'adventure', name: '🗺️ 外出历练', desc: '探索秘境，可能获得奇遇', cost: { time: 2 } },
+        { id: 'rest', name: '💤 休息调养', desc: '恢复体魄和灵力', cost: { time: 1 } }
+      ],
+
+      // NPC头像列表
+      npcAvatars: [
+        'https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/cd6a1b7c81184d68afcc694951da663d~tplv-a9rns2rl98-image.image?rcl=20251107154009649CA6622D232BA389A9&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1765093254&x-signature=tOIIiUPkP4B2fm8hIEaBuYEjtj8%3D'
+      ],
+
+      // 初始化游戏
+      init() {
+        const hasSave = this.load();
+        this.updateDisplay();
+        // 只有在没有存档时才生成初始NPC
+        if (!hasSave) {
+          this.generateRandomNPCs();
+          this.showNotification('欢迎来到合欢宗修炼模拟器！', 'success');
+        } else {
+          this.showNotification('游戏已加载！', 'success');
+        }
+        this.showCurrentEvent();
+        this.createParticles();
+      },
+
+      // 创建粒子效果
+      createParticles() {
+        const container = document.querySelector('.app-container');
+        const colors = ['#FFB6C1', '#9ED2BE', '#9EC3FF', '#FFD591'];
+        
+        for (let i = 0; i < 10; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          
+          // 随机大小
+          const size = Math.random() * 10 + 5;
+          particle.style.width = `${size}px`;
+          particle.style.height = `${size}px`;
+          
+          // 随机位置
+          particle.style.left = `${Math.random() * 100}%`;
+          particle.style.top = `${Math.random() * 100}%`;
+          
+          // 随机颜色
+          particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          
+          // 随机动画
+          const duration = Math.random() * 20 + 10;
+          const delay = Math.random() * 5;
+          particle.style.animation = `float ${duration}s ease-in-out ${delay}s infinite`;
+          
+          container.appendChild(particle);
+        }
+      },
+
+      // 更新显示
+      updateDisplay() {
+        const c = this.state.character;
+        
+        // 更新基本信息
+        document.getElementById('character-name').textContent = c.name;
+        document.getElementById('character-gender').textContent = c.gender;
+        document.getElementById('time-display').textContent = `第${this.state.day}天·${this.getTimeOfDay()}·${this.state.time}`;
+        
+        // 更新属性条
+        this.updateBar('lifespan', c.lifespan.current, c.lifespan.max);
+        this.updateBar('cultivation', c.cultivation.progress, c.cultivation.max);
+        this.updateBar('charm', c.charm, 100);
+        this.updateBar('talent', c.talent, 100);
+        this.updateBar('wisdom', c.wisdom, 100);
+        
+        // 更新数值显示
+        document.getElementById('lifespan-value').textContent = `${c.lifespan.current}/${c.lifespan.max}`;
+        document.getElementById('constitution').textContent = c.constitution.type;
+        document.getElementById('cultivation-level').textContent = `${c.cultivation.level} (${c.cultivation.progress}/${c.cultivation.max})`;
+        document.getElementById('charm-value').textContent = `${c.charm}/100`;
+        document.getElementById('talent-value').textContent = `${c.talent}/100`;
+        document.getElementById('wisdom-value').textContent = `${c.wisdom}/100`;
+        document.getElementById('spiritual-power').textContent = `${c.spiritualPower.current}/${c.spiritualPower.max}`;
+        document.getElementById('physique').textContent = `${c.physique.current}/${c.physique.max}`;
+        document.getElementById('karma').textContent = `${c.karma}/100`;
+        document.getElementById('reputation').textContent = `${c.reputation.value}/100 (${c.reputation.desc})`;
+        document.getElementById('spirit-stones').textContent = c.spiritStones;
+        
+        // 更新怀孕状态
+        const pregnancyStatus = document.getElementById('pregnancy-status');
+        const pregnancyInfo = document.getElementById('pregnancy-info');
+        if (c.pregnancy && c.pregnancy.isPregnant) {
+          pregnancyStatus.style.display = 'flex';
+          const fatherName = c.pregnancy.father ? c.pregnancy.father.name : '未知';
+          pregnancyInfo.textContent = `孕${c.pregnancy.month}月（父：${fatherName}）`;
+        } else {
+          pregnancyStatus.style.display = 'none';
+        }
+        
+        // 更新子嗣列表
+        this.updateChildrenList();
+        
+        // 更新行动按钮
+        this.updateActionButtons();
+        
+        // 更新NPC列表
+        this.updateNPCList();
+        
+        // 更新功法列表
+        this.updateSkillList();
+        
+        // 更新物品列表
+        this.updateItemList();
+      },
+
+      // 更新进度条
+      updateBar(id, current, max) {
+        const percentage = Math.min(100, (current / max) * 100);
+        const bar = document.getElementById(`${id}-bar`);
+        if (bar) {
+          bar.style.width = `${percentage}%`;
+        }
+      },
+
+      // 更新行动按钮
+      updateActionButtons() {
+        const container = document.getElementById('action-buttons');
+        container.innerHTML = '';
+        
+        this.actions.forEach(action => {
+          const btn = document.createElement('button');
+          
+          // 检查资源是否足够
+          let canAfford = true;
+          if (action.cost.stones && this.state.character.spiritStones < action.cost.stones) {
+            canAfford = false;
+          }
+          if (action.cost.physique && this.state.character.physique.current < action.cost.physique) {
+            canAfford = false;
+          }
+          
+          btn.className = `btn ${canAfford ? 'bg-gradient-primary' : 'bg-gray-300'} text-white py-3 px-4 rounded-lg font-medium btn-shadow text-sm relative overflow-hidden`;
+          btn.textContent = action.name;
+          
+          // 添加按钮描述
+          const tooltip = document.createElement('div');
+          tooltip.className = 'absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 transition-opacity duration-300 pointer-events-none whitespace-nowrap';
+          tooltip.textContent = action.desc;
+          btn.appendChild(tooltip);
+          
+          // 添加悬停效果
+          btn.addEventListener('mouseenter', () => {
+            tooltip.style.opacity = '1';
+          });
+          
+          btn.addEventListener('mouseleave', () => {
+            tooltip.style.opacity = '0';
+          });
+          
+          // 添加点击事件
+          if (canAfford) {
+            btn.onclick = () => this.executeAction(action.id);
+          } else {
+            btn.onclick = () => {
+              if (action.cost.stones && this.state.character.spiritStones < action.cost.stones) {
+                this.showNotification('灵石不足！', 'danger');
+              } else if (action.cost.physique && this.state.character.physique.current < action.cost.physique) {
+                this.showNotification('体魄不足，需要休息！', 'danger');
+              }
+            };
+          }
+          
+          container.appendChild(btn);
+        });
+      },
+
+      // 执行行动
+      executeAction(actionId) {
+        const action = this.actions.find(a => a.id === actionId);
+        if (!action) return;
+        
+        // 检查资源
+        if (action.cost.stones && this.state.character.spiritStones < action.cost.stones) {
+          this.showNotification('灵石不足！', 'danger');
+          return;
+        }
+        
+        if (action.cost.physique && this.state.character.physique.current < action.cost.physique) {
+          this.showNotification('体魄不足，需要休息！', 'danger');
+          return;
+        }
+        
+        // 消耗资源
+        if (action.cost.stones) this.state.character.spiritStones -= action.cost.stones;
+        if (action.cost.physique) this.state.character.physique.current -= action.cost.physique;
+        
+        // 执行行动效果
+        switch(actionId) {
+          case 'cultivate':
+            this.cultivate();
+            break;
+          case 'dualCultivate':
+            this.showDualCultivateMenu();
+            break;
+          case 'extract':
+            this.showExtractMenu();
+            break;
+          case 'bath':
+            this.bath();
+            break;
+          case 'market':
+            this.showMarket();
+            break;
+          case 'mission':
+            this.showMissions();
+            break;
+          case 'adventure':
+            this.adventure();
+            break;
+          case 'rest':
+            this.rest();
+            break;
+        }
+        
+        this.updateDisplay();
+      },
+
+      // 功法修炼
+      cultivate() {
+        // 显示功法选择界面
+        let html = '<h3 class="text-lg font-bold mb-4 text-primary">📚 选择要修炼的功法</h3><div class="space-y-3">';
+        this.state.skills.forEach((skill, idx) => {
+          const canCultivate = skill.level < skill.max;
+          html += `
+            <button onclick="game.cultivateSkill(${idx}); closeModal();" 
+                    class="w-full btn ${canCultivate ? 'bg-purple-100 hover:bg-purple-200' : 'bg-gray-100'} text-left p-3 rounded-lg border ${canCultivate ? 'border-purple-300' : 'border-gray-300'}"
+                    ${!canCultivate ? 'disabled' : ''}>
+              <div class="flex justify-between items-center">
+                <div class="flex-1">
+                  <div class="font-bold text-primary">${skill.name}</div>
+                  <div class="text-xs text-gray-600 mt-1">${skill.desc || '无描述'}</div>
+                  <div class="text-xs text-gray-500 mt-1">熟练度: ${skill.level}/${skill.max}</div>
+                </div>
+                <div class="text-right">
+                  ${canCultivate ? '<span class="text-sm text-purple-600">▶ 修炼</span>' : '<span class="text-sm text-gray-400">已满级</span>'}
+                </div>
+              </div>
+            </button>
+          `;
+        });
+        html += '</div>';
+        
+        this.showModal(html);
+      },
+      
+      // 修炼指定功法
+      cultivateSkill(skillIndex) {
+        const skill = this.state.skills[skillIndex];
+        if (!skill || skill.level >= skill.max) {
+          this.showNotification('该功法已满级或不存在！', 'danger');
+          return;
+        }
+        
+        const oldLevel = skill.level;
+        const gain = 10 + Math.floor(Math.random() * 20) + this.state.character.talent / 10;
+        
+        this.state.character.cultivation.progress += gain;
+        skill.level = Math.min(skill.max, skill.level + 1);
+        
+        // 如果修炼《姹女心经》且等级从0变为1，增加5点魅力
+        if (skill.name === '姹女心经' && oldLevel === 0 && skill.level > 0) {
+          this.state.character.charm = Math.min(100, this.state.character.charm + 5);
+          this.showNotification(`修炼 ${skill.name}，获得修为 +${gain}，魅力 +5！`, 'success');
+        } else {
+          this.showNotification(`修炼 ${skill.name}，获得修为 +${gain}，熟练度 +1`, 'success');
+        }
+        
+        // 检查突破
+        this.checkBreakthrough();
+        
+        this.addHistory(`修炼了 ${skill.name}，获得修为 +${gain}`);
+        this.save(); // 修炼后立即保存
+        this.updateDisplay();
+      },
+
+      // 检查突破
+      checkBreakthrough() {
+        const c = this.state.character;
+        const currentLevel = this.cultivationLevels.find(l => l.name === c.cultivation.level);
+        
+        if (currentLevel && c.cultivation.progress >= currentLevel.max) {
+          c.cultivation.progress = 0;
+          c.cultivation.level = currentLevel.next;
+          c.cultivation.max = currentLevel.next ? this.cultivationLevels.find(l => l.name === currentLevel.next).max : 100000;
+          
+          if (currentLevel.next === '飞升') {
+            this.showNotification('🎉 恭喜飞升！游戏结束！', 'success');
+          } else {
+            this.showNotification(`✨ 突破成功！达到 ${currentLevel.next}！`, 'success');
+            c.lifespan.max += Math.floor(Math.random() * 50) + 50;
+          }
+        }
+      },
+      
+
+      // 显示双修菜单
+      showDualCultivateMenu() {
+        const availableNPCs = this.state.npcs.filter(npc => npc.favorability >= 60);
+        
+        if (availableNPCs.length === 0) {
+          this.showNotification('没有可双修的NPC（需要好感度≥60）', 'danger');
+          return;
+        }
+        
+        // 检查素女心经是否满级
+        const suNvSkill = this.state.skills.find(s => s.name === '素女心经');
+        const canMultiCultivate = suNvSkill && suNvSkill.level >= 100;
+        
+        if (canMultiCultivate) {
+          // 素女心经满级：显示多修菜单（支持选择1-5名对象）
+          // 双修需要60及以上，多修需要100及以上
+          const dualCultivateNPCs = availableNPCs; // 60及以上
+          const multiCultivateNPCs = availableNPCs.filter(npc => npc.favorability >= 100); // 100及以上
+          this.showMultiCultivateMenu(dualCultivateNPCs, multiCultivateNPCs);
+        } else {
+          // 单修模式：只能选择一个对象
+          let html = '<h3 class="text-lg font-bold mb-4 text-primary">🛏️ 选择双修对象</h3>';
+          html += '<p class="text-xs text-gray-500 mb-3">💡 将素女心经修炼至100%可解锁多修功能（可选择1-5名对象）</p>';
+          html += '<div class="space-y-3">';
+          availableNPCs.forEach((npc, idx) => {
+            // 好感度颜色
+            let favorColor = 'text-gray-600';
+            if (npc.favorability >= 80) favorColor = 'text-pink-600';
+            else if (npc.favorability >= 60) favorColor = 'text-purple-600';
+            else if (npc.favorability >= 40) favorColor = 'text-blue-600';
+            
+            html += `
+              <button onclick="game.dualCultivate(game.state.npcs.find(n => n.id === ${npc.id})); closeModal();" 
+                      class="w-full btn bg-pink-100 hover:bg-pink-200 text-left p-3 rounded-lg border border-pink-300 transition-all duration-300 transform hover:-translate-y-1">
+                <div class="flex items-center">
+                  <div class="npc-avatar mr-3">
+                    <img src="${npc.avatar || this.npcAvatars[0]}" alt="${npc.name}" class="w-full h-full object-cover">
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-bold text-primary">${npc.name}</div>
+                    <div class="text-xs text-gray-600">${npc.title}${npc.gender ? `-${npc.gender}` : ''}${npc.age ? `-${npc.age}` : ''}-${npc.appearance}</div>
+                    <div class="text-xs mt-1 ${favorColor}">好感度: ${npc.favorability} (${npc.relationship})</div>
+                  </div>
+                </div>
+              </button>
+            `;
+          });
+          html += '</div>';
+          this.showModal(html);
+        }
+      },
+
+      // 显示多修菜单
+      showMultiCultivateMenu(dualCultivateNPCs, multiCultivateNPCs) {
+        let html = '<h3 class="text-lg font-bold mb-4 text-primary">🛏️ 选择双修/多修对象</h3>';
+        html += '<p class="text-xs text-gray-500 mb-3">✨ 素女心经已满级，可选择1名对象进行双修（好感度≥60），或选择2-5名对象进行多修（好感度≥100）</p>';
+        html += '<div id="multi-cultivate-selected" class="mb-3 p-2 bg-purple-50 rounded-lg border border-purple-200 hidden">';
+        html += '<div class="text-xs font-bold text-purple-600 mb-1">已选择：<span id="selected-count">0</span>名</div>';
+        html += '<div id="selected-npcs-list" class="text-xs text-gray-600"></div>';
+        html += '</div>';
+        html += '<div class="space-y-2 max-h-96 overflow-y-auto">';
+        
+        dualCultivateNPCs.forEach((npc, idx) => {
+          // 好感度颜色
+          let favorColor = 'text-gray-600';
+          if (npc.favorability >= 100) favorColor = 'text-pink-600';
+          else if (npc.favorability >= 80) favorColor = 'text-pink-500';
+          else if (npc.favorability >= 60) favorColor = 'text-purple-600';
+          
+          // 判断是否可以多修
+          const canMulti = npc.favorability >= 100;
+          const multiTag = canMulti ? '<span class="text-xs bg-pink-100 text-pink-600 px-1 py-0.5 rounded ml-1">可多修</span>' : '';
+          
+          html += `
+            <label class="flex items-center w-full btn bg-pink-50 hover:bg-pink-100 text-left p-3 rounded-lg border border-pink-200 transition-all duration-300 cursor-pointer">
+              <input type="checkbox" value="${npc.id}" class="multi-cultivate-checkbox mr-3 w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary" onchange="game.updateMultiCultivateSelection()">
+              <div class="flex items-center flex-1">
+                <div class="npc-avatar mr-3">
+                  <img src="${npc.avatar || this.npcAvatars[0]}" alt="${npc.name}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1">
+                  <div class="font-bold text-primary">${npc.name}${multiTag}</div>
+                  <div class="text-xs text-gray-600">${npc.title}${npc.gender ? `-${npc.gender}` : ''}${npc.age ? `-${npc.age}` : ''}-${npc.appearance}</div>
+                  <div class="text-xs mt-1 ${favorColor}">好感度: ${npc.favorability} (${npc.relationship})</div>
+                </div>
+              </div>
+            </label>
+          `;
+        });
+        html += '</div>';
+        html += '<div class="mt-4 flex space-x-2">';
+        html += '<button id="confirm-multi-cultivate" onclick="game.confirmMultiCultivate()" class="flex-1 bg-primary hover:bg-opacity-90 text-white px-4 py-2 rounded-lg font-medium disabled:bg-gray-300 disabled:cursor-not-allowed" disabled>确认</button>';
+        html += '<button id="cancel-multi-cultivate" onclick="closeModal()" class="btn bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">取消</button>';
+        html += '</div>';
+        
+        this.showModal(html);
+        // 隐藏模态框footer区域的关闭按钮
+        const footerArea = document.querySelector('.modal-footer-area');
+        if (footerArea) {
+          footerArea.style.display = 'none';
+        }
+        // 初始化选择状态
+        this.multiCultivateSelected = [];
+      },
+
+      // 更新多修选择状态
+      updateMultiCultivateSelection() {
+        const checkboxes = document.querySelectorAll('.multi-cultivate-checkbox:checked');
+        const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        const selectedCount = selectedIds.length;
+        
+        // 限制最多选择5名
+        if (selectedCount > 5) {
+          this.showNotification('最多只能选择5名对象！', 'danger');
+          // 取消最后一个选择（找到第6个被选中的）
+          const allChecked = Array.from(document.querySelectorAll('.multi-cultivate-checkbox:checked'));
+          if (allChecked.length > 5) {
+            allChecked[5].checked = false;
+          }
+          // 重新获取选中的ID
+          const newCheckboxes = document.querySelectorAll('.multi-cultivate-checkbox:checked');
+          this.multiCultivateSelected = Array.from(newCheckboxes).map(cb => parseInt(cb.value));
+          // 重新计算数量
+          const finalCount = this.multiCultivateSelected.length;
+          
+          // 更新显示
+          const selectedDiv = document.getElementById('multi-cultivate-selected');
+          const countSpan = document.getElementById('selected-count');
+          const listDiv = document.getElementById('selected-npcs-list');
+          const confirmBtn = document.getElementById('confirm-multi-cultivate');
+          
+          if (finalCount > 0) {
+            selectedDiv.classList.remove('hidden');
+            countSpan.textContent = finalCount;
+            
+            const selectedNPCs = this.state.npcs.filter(npc => this.multiCultivateSelected.includes(npc.id));
+            listDiv.innerHTML = selectedNPCs.map(npc => npc.name).join('、');
+            
+            // 允许选择1名或2-5名
+            if (finalCount >= 1 && finalCount <= 5) {
+              // 检查条件
+              let canConfirm = true;
+              let warningMsg = '';
+              const selectedNPCs = this.state.npcs.filter(npc => this.multiCultivateSelected.includes(npc.id));
+              
+              if (finalCount === 1) {
+                // 单修：需要好感度≥60
+                if (selectedNPCs[0].favorability < 60) {
+                  canConfirm = false;
+                  warningMsg = '（需要好感度≥60）';
+                }
+                confirmBtn.textContent = '确认双修' + warningMsg;
+              } else {
+                // 多修：需要所有NPC好感度≥100
+                const invalidNPCs = selectedNPCs.filter(npc => npc.favorability < 100);
+                if (invalidNPCs.length > 0) {
+                  canConfirm = false;
+                  warningMsg = `（${invalidNPCs.map(n => n.name).join('、')}好感度不足100）`;
+                }
+                confirmBtn.textContent = '确认多修' + warningMsg;
+              }
+              
+              confirmBtn.disabled = !canConfirm;
+            } else {
+              confirmBtn.disabled = true;
+            }
+          } else {
+            selectedDiv.classList.add('hidden');
+            confirmBtn.disabled = true;
+          }
+          return;
+        }
+        
+        this.multiCultivateSelected = selectedIds;
+        
+        // 更新显示
+        const selectedDiv = document.getElementById('multi-cultivate-selected');
+        const countSpan = document.getElementById('selected-count');
+        const listDiv = document.getElementById('selected-npcs-list');
+        const confirmBtn = document.getElementById('confirm-multi-cultivate');
+        
+        if (selectedCount > 0) {
+          selectedDiv.classList.remove('hidden');
+          countSpan.textContent = selectedCount;
+          
+          // 显示已选择的NPC名称
+          const selectedNPCs = this.state.npcs.filter(npc => selectedIds.includes(npc.id));
+          listDiv.innerHTML = selectedNPCs.map(npc => npc.name).join('、');
+          
+          // 启用/禁用确认按钮（允许1名或2-5名）
+          if (selectedCount >= 1 && selectedCount <= 5) {
+            // 检查条件
+            let canConfirm = true;
+            let warningMsg = '';
+            
+            if (selectedCount === 1) {
+              // 单修：需要好感度≥60
+              if (selectedNPCs[0].favorability < 60) {
+                canConfirm = false;
+                warningMsg = '（需要好感度≥60）';
+              }
+              confirmBtn.textContent = '确认双修' + warningMsg;
+            } else {
+              // 多修：需要所有NPC好感度≥100
+              const invalidNPCs = selectedNPCs.filter(npc => npc.favorability < 100);
+              if (invalidNPCs.length > 0) {
+                canConfirm = false;
+                warningMsg = `（${invalidNPCs.map(n => n.name).join('、')}好感度不足100）`;
+              }
+              confirmBtn.textContent = '确认多修' + warningMsg;
+            }
+            
+            confirmBtn.disabled = !canConfirm;
+          } else {
+            confirmBtn.disabled = true;
+          }
+        } else {
+          selectedDiv.classList.add('hidden');
+          confirmBtn.disabled = true;
+        }
+      },
+
+      // 确认双修/多修
+      confirmMultiCultivate() {
+        if (!this.multiCultivateSelected || this.multiCultivateSelected.length < 1 || this.multiCultivateSelected.length > 5) {
+          this.showNotification('请选择1-5名对象！', 'danger');
+          return;
+        }
+        
+        const selectedNPCs = this.state.npcs.filter(npc => this.multiCultivateSelected.includes(npc.id));
+        
+        // 如果只选择了1名，使用双修（需要好感度≥60）
+        if (selectedNPCs.length === 1) {
+          if (selectedNPCs[0].favorability < 60) {
+            this.showNotification('双修需要好感度≥60！', 'danger');
+            return;
+          }
+          this.dualCultivate(selectedNPCs[0]);
+        } else {
+          // 如果选择了2-5名，使用多修（需要所有NPC好感度≥100）
+          const invalidNPCs = selectedNPCs.filter(npc => npc.favorability < 100);
+          if (invalidNPCs.length > 0) {
+            this.showNotification(`多修需要所有对象好感度≥100！${invalidNPCs.map(n => n.name).join('、')}不满足条件`, 'danger');
+            return;
+          }
+          this.multiCultivate(selectedNPCs);
+        }
+        closeModal();
+      },
+
+      // 多修
+      multiCultivate(npcs) {
+        if (!npcs || npcs.length < 2 || npcs.length > 5) {
+          this.showNotification('多修需要2-5名对象！', 'danger');
+          return;
+        }
+        
+        let totalGain = 0;
+        const npcNames = [];
+        
+        npcs.forEach(npc => {
+          const baseGain = 30 + Math.floor(Math.random() * 40);
+          const favorBonus = npc.favorability / 10;
+          let gain = Math.floor(baseGain * (1 + favorBonus / 10));
+          
+          // 素女心经满级，多修效果提升10%
+          gain = Math.floor(gain * 1.1);
+          
+          totalGain += gain;
+          npc.favorability = Math.min(100, npc.favorability + 5);
+          this.updateNPCRelationship(npc);
+          npcNames.push(npc.name);
+        });
+        
+        this.state.character.cultivation.progress += totalGain;
+        
+        // 恢复灵力（多修恢复更多）
+        const spiritualGain = 10 + npcs.length * 5;
+        this.state.character.spiritualPower.current = Math.min(
+          this.state.character.spiritualPower.max,
+          this.state.character.spiritualPower.current + spiritualGain
+        );
+        
+        // 检查突破
+        this.checkBreakthrough();
+        
+        // 检查是否怀孕（主控与异性多修时概率怀孕）
+        if (this.state.character.pregnancy && !this.state.character.pregnancy.isPregnant) {
+          // 找出异性NPC
+          const oppositeGenderNPCs = npcs.filter(npc => this.state.character.gender !== npc.gender);
+          if (oppositeGenderNPCs.length > 0) {
+            // 多修时，随机选择一个异性NPC作为可能的父亲，有概率导致怀孕
+            const randomNPC = oppositeGenderNPCs[Math.floor(Math.random() * oppositeGenderNPCs.length)];
+            const pregnancyChance = 0.3; // 30%概率
+            if (Math.random() < pregnancyChance) {
+              this.state.character.pregnancy.isPregnant = true;
+              this.state.character.pregnancy.month = 1;
+              this.state.character.pregnancy.startDay = this.state.day;
+              this.state.character.pregnancy.father = { name: randomNPC.name, id: randomNPC.id };
+              this.showNotification(`💕 与 ${randomNPC.name} 等多修后，你发现自己怀孕了！`, 'success');
+            }
+          }
+        }
+        
+        const notificationMsg = `与 ${npcNames.join('、')} 进行多修，获得修为 +${totalGain}，灵力 +${spiritualGain}（素女心经加成）`;
+        this.showNotification(notificationMsg, 'success');
+        this.addHistory(`与 ${npcNames.join('、')}（共${npcs.length}名）进行了多修`);
+        this.save(); // 多修后立即保存
+        this.updateDisplay();
+      },
+
+      // 双修
+      dualCultivate(npc) {
+        if (!npc) return;
+        
+        const baseGain = 30 + Math.floor(Math.random() * 40);
+        const favorBonus = npc.favorability / 10;
+        let gain = Math.floor(baseGain * (1 + favorBonus / 10));
+        
+        // 检查《素女心经》效果（双修效果提升10%）
+        const suNvSkill = this.state.skills.find(s => s.name === '素女心经');
+        if (suNvSkill && suNvSkill.level > 0) {
+          gain = Math.floor(gain * 1.1);
+        }
+        
+        this.state.character.cultivation.progress += gain;
+        npc.favorability = Math.min(100, npc.favorability + 5);
+        this.updateNPCRelationship(npc);
+        
+        // 恢复灵力
+        this.state.character.spiritualPower.current = Math.min(
+          this.state.character.spiritualPower.max,
+          this.state.character.spiritualPower.current + 10
+        );
+        
+        // 检查突破
+        this.checkBreakthrough();
+        
+        // 检查是否怀孕（主控与异性双修时概率怀孕）
+        if (this.state.character.gender !== npc.gender) {
+          // 异性双修，有概率怀孕
+          const pregnancyChance = 0.3; // 30%概率
+          if (Math.random() < pregnancyChance && !this.state.character.pregnancy.isPregnant) {
+            this.state.character.pregnancy.isPregnant = true;
+            this.state.character.pregnancy.month = 1;
+            this.state.character.pregnancy.startDay = this.state.day;
+            this.state.character.pregnancy.father = { name: npc.name, id: npc.id };
+            this.showNotification(`💕 与 ${npc.name} 双修后，你发现自己怀孕了！`, 'success');
+          }
+        }
+        
+        let notificationMsg = `与 ${npc.name} 双修，获得修为 +${gain}，好感度 +5`;
+        if (suNvSkill && suNvSkill.level > 0) {
+          notificationMsg += '（素女心经加成）';
+        }
+        this.showNotification(notificationMsg, 'success');
+        this.addHistory(`与 ${npc.name}（${npc.title}）进行了双修`);
+        this.save(); // 双修后立即保存
+        this.updateDisplay();
+      },
+
+      // 显示采补菜单
+      showExtractMenu() {
+        const availableNPCs = this.state.npcs.filter(npc => npc.favorability >= 20);
+        
+        if (availableNPCs.length === 0) {
+          this.showNotification('没有可采补的NPC', 'danger');
+          return;
+        }
+        
+        let html = '<h3 class="text-lg font-bold mb-4 text-red-600">💋 选择采补对象</h3><div class="space-y-3">';
+        availableNPCs.forEach((npc, idx) => {
+          // 好感度颜色
+          let favorColor = 'text-gray-600';
+          if (npc.favorability >= 80) favorColor = 'text-pink-600';
+          else if (npc.favorability >= 60) favorColor = 'text-purple-600';
+          else if (npc.favorability >= 40) favorColor = 'text-blue-600';
+          else if (npc.favorability < 0) favorColor = 'text-red-600';
+          
+          html += `
+            <button onclick="game.extract(game.state.npcs.find(n => n.id === ${npc.id})); closeModal();" 
+                    class="w-full btn bg-red-100 hover:bg-red-200 text-left p-3 rounded-lg border border-red-300 transition-all duration-300 transform hover:-translate-y-1">
+              <div class="flex items-center">
+                <div class="npc-avatar mr-3">
+                  <img src="${npc.avatar || this.npcAvatars[0]}" alt="${npc.name}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1">
+                  <div class="font-bold text-red-600">${npc.name}</div>
+                  <div class="text-xs text-gray-600">${npc.title}${npc.gender ? `-${npc.gender}` : ''}${npc.age ? `-${npc.age}` : ''}-${npc.appearance}</div>
+                  <div class="text-xs mt-1 ${favorColor}">好感度: ${npc.favorability} (${npc.relationship})</div>
+                  <div class="text-xs text-red-600 mt-1">⚠️ 采补会降低好感度并可能增加业障</div>
+                </div>
+              </div>
+            </button>
+          `;
+        });
+        html += '</div>';
+        
+        this.showModal(html);
+      },
+
+      // 采补
+      extract(npc) {
+        if (!npc) return;
+        
+        let gain = 50 + Math.floor(Math.random() * 50);
+        
+        // 检查《姹女心经》效果（采补时效果提升15%）
+        const chaNvSkill = this.state.skills.find(s => s.name === '姹女心经');
+        if (chaNvSkill && chaNvSkill.level > 0) {
+          gain = Math.floor(gain * 1.15);
+        }
+        
+        this.state.character.cultivation.progress += gain;
+        npc.favorability = Math.max(-100, npc.favorability - 20);
+        this.updateNPCRelationship(npc);
+        
+        // 增加业障
+        if (Math.random() < 0.7) {
+          this.state.character.karma += 5;
+        }
+        
+        // 检查突破
+        this.checkBreakthrough();
+        
+        let notificationMsg = `采补 ${npc.name}，获得修为 +${gain}，好感度 -20，业障可能增加`;
+        if (chaNvSkill && chaNvSkill.level > 0) {
+          notificationMsg += '（姹女心经加成）';
+        }
+        this.showNotification(notificationMsg, 'success');
+        this.addHistory(`采补了 ${npc.name}（${npc.title}）`);
+        this.save(); // 采补后立即保存
+        this.updateDisplay();
+      },
+
+      // 沐浴
+      bath() {
+        this.state.character.spiritualPower.current = this.state.character.spiritualPower.max;
+        
+        // 可能遇到NPC
+        if (Math.random() < 0.3) {
+          this.generateRandomNPCs(1);
+          this.showNotification('在醉梦池遇到新的NPC！', 'success');
+        }
+        
+        this.showNotification('在醉梦池沐浴，灵力已恢复', 'success');
+        this.save(); // 沐浴后立即保存
+      },
+
+      // 显示坊市
+      showMarket() {
+        const items = [
+          { name: '回灵丹', price: 50, effect: '恢复灵力', icon: '💊', type: '丹药' },
+          { name: '增修丹', price: 100, effect: '增加修为', icon: '💊', type: '丹药' },
+          { name: '媚情香', price: 150, effect: '提升魅力', icon: '🌸', type: '物品' },
+          { name: '合欢散', price: 200, effect: '提升双修效果', icon: '💕', type: '物品' },
+          { name: '聚灵阵', price: 300, effect: '修炼速度+20%', icon: '✨', type: '法器' },
+          { name: '养颜丹', price: 80, effect: '提升魅力', icon: '💊', type: '丹药' }
+        ];
+        
+        // 构建固定标题
+        let html = '<div class="flex flex-col" style="height: 60vh; max-height: 60vh; min-height: 400px;">';
+        html += '<div class="flex-shrink-0 pb-3 border-b border-gray-200 mb-3">';
+        html += '<h3 class="text-lg font-bold text-primary">🎐 宗门坊市</h3>';
+        html += '</div>';
+        
+        // 可滚动的物品列表区域
+        html += '<div class="market-scroll-area flex-1 overflow-y-auto space-y-3 pr-2" style="min-height: 0; flex: 1 1 auto;">';
+        items.forEach((item, idx) => {
+          const canAfford = this.state.character.spiritStones >= item.price;
+          html += `
+            <button onclick="game.buyItem(${JSON.stringify(item).replace(/"/g, '&quot;')});" 
+                    class="w-full btn ${canAfford ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-100'} text-left p-3 rounded-lg border ${canAfford ? 'border-green-300' : 'border-gray-300'} transition-all duration-300 transform hover:-translate-y-1"
+                    ${!canAfford ? 'disabled' : ''}>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <span class="text-2xl mr-3">${item.icon}</span>
+                  <div>
+                    <div class="font-bold text-primary">${item.name}</div>
+                    <div class="text-xs text-gray-600">${item.effect}</div>
+                    <div class="text-xs text-gray-500">${item.type}</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-yellow-600">${item.price}💰</div>
+                  ${!canAfford ? '<div class="text-xs text-red-600">灵石不足</div>' : ''}
+                </div>
+              </div>
+            </button>
+          `;
+        });
+        html += '</div>';
+        html += '</div>';
+        
+        this.showModal(html);
+        
+        // 禁用 modal-content 的滚动，让内部区域滚动
+        const modalContent = document.getElementById('modal-content');
+        if (modalContent) {
+          modalContent.style.overflow = 'hidden';
+          modalContent.style.height = 'auto';
+        }
+        
+        // 更新关闭按钮区域，添加灵石显示
+        this.updateMarketFooter();
+      },
+      
+      // 更新坊市底部（灵石显示和关闭按钮）
+      updateMarketFooter() {
+        const footerArea = document.querySelector('.modal-footer-area');
+        if (footerArea) {
+          footerArea.className = 'modal-footer-area mt-4 flex justify-between items-center';
+          footerArea.innerHTML = `
+            <div class="flex items-center text-yellow-600">
+              <span class="text-xl mr-2">💰</span>
+              <span class="font-bold text-base">拥有灵石: ${this.state.character.spiritStones}</span>
+            </div>
+            <button onclick="closeModal()" class="btn bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">关闭</button>
+          `;
+        }
+      },
+
+      // 购买物品
+      buyItem(item) {
+        if (this.state.character.spiritStones < item.price) {
+          this.showNotification('灵石不足！', 'danger');
+          return;
+        }
+        
+        this.state.character.spiritStones -= item.price;
+        const existingItem = this.state.items.find(i => i.name === item.name);
+        
+        if (existingItem) {
+          existingItem.count++;
+        } else {
+          // 保存物品信息，但不包含price和effect（这些是商店信息）
+          this.state.items.push({ 
+            name: item.name, 
+            type: item.type || '物品', 
+            count: 1,
+            icon: item.icon || '🎁',
+            desc: item.effect || ''
+          });
+        }
+        
+        this.showNotification(`购买了 ${item.name}`, 'success');
+        this.save(); // 购买后立即保存
+        
+        // 刷新坊市显示（更新灵石数量和物品状态）
+        this.showMarket();
+        this.updateDisplay(); // 更新主界面显示
+      },
+
+      // 显示任务
+      showMissions() {
+        const missions = [
+          { name: '采集灵草', reward: { stones: 100, contribution: 10 }, icon: '🌿' },
+          { name: '巡逻护山', reward: { stones: 150, contribution: 15 }, icon: '🗡️' },
+          { name: '护送物资', reward: { stones: 200, contribution: 20 }, icon: '📦' },
+          { name: '接待宾客', reward: { stones: 120, contribution: 12 }, icon: '👥' },
+          { name: '整理典籍', reward: { stones: 80, contribution: 8 }, icon: '📚' }
+        ];
+        
+        let html = '<h3 class="text-lg font-bold mb-4 text-primary">📋 宗门任务</h3><div class="space-y-3">';
+        missions.forEach((mission, idx) => {
+          html += `
+            <button onclick="game.completeMission(${JSON.stringify(mission).replace(/"/g, '&quot;')}); closeModal();" 
+                    class="w-full btn bg-blue-100 hover:bg-blue-200 text-left p-3 rounded-lg border border-blue-300 transition-all duration-300 transform hover:-translate-y-1">
+              <div class="flex items-center">
+                <span class="text-2xl mr-3">${mission.icon}</span>
+                <div class="flex-1">
+                  <div class="font-bold text-primary">${mission.name}</div>
+                  <div class="text-xs mt-1">奖励: ${mission.reward.stones}💰灵石, ${mission.reward.contribution}贡献点</div>
+                </div>
+                <span class="text-blue-500">▶</span>
+              </div>
+            </button>
+          `;
+        });
+        html += '</div>';
+        
+        this.showModal(html);
+      },
+
+      // 完成任务
+      completeMission(mission) {
+        this.state.character.spiritStones += mission.reward.stones;
+        this.showNotification(`完成任务 ${mission.name}，获得 ${mission.reward.stones}灵石`, 'success');
+        this.addHistory(`完成了任务：${mission.name}`);
+        this.save(); // 完成任务后立即保存
+      },
+
+      // 历练
+      adventure() {
+        const events = [
+          { type: '奇遇', desc: '捡到古修士残魂', effect: () => { this.state.character.wisdom += 3; return '悟性 +3'; } },
+          { type: '奇遇', desc: '误入灵气节点', effect: () => { this.state.character.cultivation.progress += 50; return '修为 +50'; } },
+          { type: '危机', desc: '遭遇心魔反噬', effect: () => { this.state.character.physique.current -= 2; return '体魄 -2'; } },
+          { type: '奇遇', desc: '获得灵草', effect: () => { this.state.character.spiritStones += 200; return '获得200灵石'; } },
+          { type: '危机', desc: '被妖兽攻击', effect: () => { this.state.character.lifespan.current -= 5; return '寿元 -5'; } }
+        ];
+        
+        const event = events[Math.floor(Math.random() * events.length)];
+        const result = event.effect();
+        
+        // 检查突破（如果是修为增加）
+        if (event.desc.includes('灵气节点')) {
+          this.checkBreakthrough();
+        }
+        
+        // 30%概率遇到魔族或妖族NPC
+        if (Math.random() < 0.3) {
+          this.generateSpecialNPC();
+        }
+        
+        this.showNotification(`${event.type}：${event.desc}，${result}`, event.type === '奇遇' ? 'success' : 'danger');
+        this.addHistory(`外出历练：${event.desc}`);
+        this.save(); // 历练后立即保存
+      },
+      
+      // 生成特殊NPC（魔族/妖族）
+      generateSpecialNPC() {
+        const races = ['魔族', '妖族'];
+        const race = races[Math.floor(Math.random() * races.length)];
+        
+        // 魔族名字库
+        const demonNames = ['夜', '血', '暗', '魔', '煞', '冥', '幽', '邪'];
+        const demonTitles = ['魔尊', '魔将', '魔女', '魔子', '魔君', '魔主'];
+        
+        // 妖族名字库
+        const demonNames2 = ['狐', '狼', '蛇', '虎', '豹', '鹰', '凤', '龙'];
+        const demonTitles2 = ['妖王', '妖将', '妖女', '妖主', '妖君', '妖尊'];
+        
+        const gender = Math.random() < 0.5 ? '男' : '女';
+        const age = 18 + Math.floor(Math.random() * 182);
+        
+        let name, title;
+        if (race === '魔族') {
+          const surname = demonNames[Math.floor(Math.random() * demonNames.length)];
+          const givenName = gender === '男' ? '无痕' : '魅影';
+          name = surname + givenName;
+          title = demonTitles[Math.floor(Math.random() * demonTitles.length)];
+        } else {
+          const surname = demonNames2[Math.floor(Math.random() * demonNames2.length)];
+          const givenName = gender === '男' ? '啸天' : '媚儿';
+          name = surname + givenName;
+          title = demonTitles2[Math.floor(Math.random() * demonTitles2.length)];
+        }
+        
+        const appearances = ['美如冠玉', '身如青竹', '眉眼含春', '清冷如月', '妖娆妩媚', '英姿飒爽', '温文尔雅', '器宇轩昂'];
+        
+        const npc = {
+          id: Date.now() + Math.random(),
+          name: name,
+          title: title,
+          gender: gender,
+          age: age,
+          appearance: appearances[Math.floor(Math.random() * appearances.length)],
+          charm: 70 + Math.floor(Math.random() * 30), // 特殊NPC魅力稍高
+          favorability: Math.floor(Math.random() * 30), // 初始好感度较低
+          relationship: '形同路人',
+          cultivation: '筑基初期',
+          avatar: this.npcAvatars[Math.floor(Math.random() * this.npcAvatars.length)],
+          race: race,
+          category: 'casual' // 萍水相逢
+        };
+        
+        // 更新关系状态
+        this.updateNPCRelationship(npc);
+        
+        this.state.npcs.push(npc);
+        this.showNotification(`在历练中遇到了${race}${name}`, 'info');
+        this.updateNPCList();
+      },
+
+      // 休息
+      rest() {
+        this.state.character.physique.current = Math.min(
+          this.state.character.physique.max,
+          this.state.character.physique.current + 5
+        );
+        this.state.character.spiritualPower.current = Math.min(
+          this.state.character.spiritualPower.max,
+          this.state.character.spiritualPower.current + 5
+        );
+        
+        this.showNotification('休息调养，体魄和灵力恢复', 'success');
+        this.save(); // 休息后立即保存
+      },
+
+      // 生成随机NPC
+      generateRandomNPCs(count = 3) {
+        const titles = ['正道仙尊', '魔道圣女', '散修', '剑宗弟子', '丹宗长老', '符宗弟子', '器宗大师', '御兽宗少主'];
+        const appearances = ['美如冠玉', '身如青竹', '眉眼含春', '清冷如月', '妖娆妩媚', '英姿飒爽', '温文尔雅', '器宇轩昂'];
+        
+        // 姓氏库
+        const surnames = ['李', '王', '张', '刘', '陈', '杨', '赵', '黄', '周', '吴', '徐', '孙', '胡', '朱', '高', '林', '何', '郭', '马', '罗'];
+        
+        // 男性名字库（测试10个）
+        const maleNames = ['临川', '清扬', '无痕', '墨', '震天', '云峰', '天行', '浩然', '子轩', '文博'];
+        
+        // 女性名字库（测试10个）
+        const femaleNames = ['清月', '若雪', '轻舞', '水痕', '火舞', '雨柔', '梦瑶', '诗涵', '雅静', '思雨'];
+        
+        for (let i = 0; i < count; i++) {
+          if (this.state.npcs.length >= 10) break; // 最多10个NPC
+          
+          // 随机生成性别
+          const gender = Math.random() < 0.5 ? '男' : '女';
+          // 随机生成年龄（18-200岁，适合修仙世界）
+          const age = 18 + Math.floor(Math.random() * 182);
+          
+          // 根据性别选择对应的名字库
+          const namePool = gender === '男' ? maleNames : femaleNames;
+          const surname = surnames[Math.floor(Math.random() * surnames.length)];
+          const givenName = namePool[Math.floor(Math.random() * namePool.length)];
+          const fullName = surname + givenName;
+          
+          const npc = {
+            id: Date.now() + i,
+            name: fullName,
+            title: titles[Math.floor(Math.random() * titles.length)],
+            gender: gender,
+            age: age,
+            appearance: appearances[Math.floor(Math.random() * appearances.length)],
+            charm: 60 + Math.floor(Math.random() * 40),
+            favorability: Math.floor(Math.random() * 40),
+            relationship: '形同路人',
+            cultivation: '筑基初期',
+            avatar: this.npcAvatars[Math.floor(Math.random() * this.npcAvatars.length)],
+            race: '人族', // 初始NPC都为人族
+            category: 'casual' // 初始都在萍水相逢
+          };
+          
+          // 更新关系状态
+          this.updateNPCRelationship(npc);
+          
+          this.state.npcs.push(npc);
+        }
+      },
+
+      // 更新NPC关系状态
+      updateNPCRelationship(npc) {
+        if (npc.favorability <= -1) {
+          npc.relationship = '敌对';
+        } else if (npc.favorability <= 20) {
+          npc.relationship = '形同路人';
+        } else if (npc.favorability <= 40) {
+          npc.relationship = '冷淡';
+        } else if (npc.favorability <= 60) {
+          npc.relationship = '友善';
+        } else if (npc.favorability <= 80) {
+          npc.relationship = '亲密';
+        } else {
+          npc.relationship = '倾心';
+        }
+        
+        // 好感度首次达到100时，从萍水相逢加入红鸾谱（分类不再改变）
+        if (npc.favorability >= 100 && npc.category === 'casual') {
+          npc.category = 'normal';
+          this.showNotification(`💖 ${npc.name} 好感度达到100，已加入红鸾谱！`, 'success');
+        }
+      },
+
+      // 生产（诞下孩子）
+      giveBirth() {
+        if (!this.state.character.pregnancy || !this.state.character.pregnancy.isPregnant) {
+          return;
+        }
+
+        // 随机生成孩子性别
+        const childGender = Math.random() < 0.5 ? '男' : '女';
+        
+        // 获取主控姓氏（从主控名字中提取第一个字作为姓氏）
+        const mainCharacterName = this.state.character.name;
+        const surname = mainCharacterName.length > 0 ? mainCharacterName[0] : '李';
+        
+        // 创建孩子对象
+        const child = {
+          id: Date.now(),
+          surname: surname,
+          givenName: '', // 待取名
+          gender: childGender,
+          birthDay: this.state.day,
+          father: this.state.character.pregnancy.father,
+          intimacy: 50 // 初始亲密度
+        };
+
+        // 重置怀孕状态
+        this.state.character.pregnancy.isPregnant = false;
+        this.state.character.pregnancy.month = 0;
+        this.state.character.pregnancy.startDay = 0;
+        const fatherInfo = this.state.character.pregnancy.father;
+        this.state.character.pregnancy.father = null;
+
+        // 显示取名弹窗
+        this.showNameChildModal(child);
+      },
+
+      // 显示给孩子取名弹窗
+      showNameChildModal(child) {
+        const genderText = child.gender === '男' ? '男孩' : '女孩';
+        const genderEmoji = child.gender === '男' ? '👶' : '👧';
+        
+        let html = `
+          <div class="text-center">
+            <div class="text-4xl mb-4">${genderEmoji}</div>
+            <h2 class="text-2xl font-bold text-primary mb-2">恭喜！诞下${genderText}</h2>
+            <p class="text-gray-600 mb-6">请为您的孩子取名</p>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">姓氏：${child.surname}</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">名字：</label>
+              <input type="text" id="child-name-input" placeholder="请输入名字或点击随机选择" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent mb-3">
+              <button onclick="game.randomChildName('${child.gender}')" 
+                      class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors mb-4">
+                🎲 随机选择名字
+              </button>
+            </div>
+          </div>
+        `;
+
+        // 先调用showModal设置内容
+        this.showModal(html);
+        
+        // 然后自定义footer（必须在showModal之后设置，否则会被覆盖）
+        const footerArea = document.querySelector('.modal-footer-area');
+        if (footerArea) {
+          footerArea.className = 'modal-footer-area mt-4 flex justify-end space-x-2';
+          footerArea.innerHTML = `
+            <button onclick="game.confirmChildName(${child.id})" 
+                    class="bg-primary hover:bg-opacity-90 text-white px-6 py-2 rounded-lg font-medium">
+              确认
+            </button>
+            <button onclick="game.closeChildNameModal()" 
+                    class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">
+              关闭
+            </button>
+          `;
+        }
+        
+        // 保存当前孩子到临时变量，以便确认时使用
+        this.tempChild = child;
+      },
+
+      // 随机选择孩子名字
+      randomChildName(gender) {
+        // 男性名字库
+        const maleNames = ['临川', '清扬', '无痕', '墨', '震天', '云峰', '天行', '浩然', '子轩', '文博'];
+        // 女性名字库
+        const femaleNames = ['清月', '若雪', '轻舞', '水痕', '火舞', '雨柔', '梦瑶', '诗涵', '雅静', '思雨'];
+        
+        const namePool = gender === '男' ? maleNames : femaleNames;
+        const randomName = namePool[Math.floor(Math.random() * namePool.length)];
+        // 支持取名和改名两种输入框
+        const nameInput = document.getElementById('child-name-input') || document.getElementById('rename-child-input');
+        if (nameInput) {
+          nameInput.value = randomName;
+        }
+      },
+
+      // 确认孩子姓名
+      confirmChildName(childId) {
+        const nameInput = document.getElementById('child-name-input');
+        let givenName = nameInput ? nameInput.value.trim() : '';
+        
+        // 如果名字为空，使用随机名字
+        if (!givenName) {
+          const gender = this.tempChild.gender;
+          const maleNames = ['临川', '清扬', '无痕', '墨', '震天', '云峰', '天行', '浩然', '子轩', '文博'];
+          const femaleNames = ['清月', '若雪', '轻舞', '水痕', '火舞', '雨柔', '梦瑶', '诗涵', '雅静', '思雨'];
+          const namePool = gender === '男' ? maleNames : femaleNames;
+          givenName = namePool[Math.floor(Math.random() * namePool.length)];
+        }
+
+        // 更新孩子信息
+        this.tempChild.givenName = givenName;
+        this.tempChild.fullName = this.tempChild.surname + givenName;
+
+        // 添加到子嗣列表
+        if (!this.state.character.children) {
+          this.state.character.children = [];
+        }
+        this.state.character.children.push(this.tempChild);
+
+        // 显示通知
+        const genderText = this.tempChild.gender === '男' ? '男孩' : '女孩';
+        this.showNotification(`🎉 恭喜！您的${genderText} ${this.tempChild.fullName} 诞生了！`, 'success');
+        this.addHistory(`诞下${genderText}：${this.tempChild.fullName}`);
+
+        // 清理临时变量
+        this.tempChild = null;
+
+        // 关闭弹窗
+        closeModal();
+
+        // 更新显示
+        this.updateDisplay();
+        this.save();
+      },
+
+      // 关闭取名弹窗（随机选择名字并自动确认）
+      closeChildNameModal() {
+        if (!this.tempChild) {
+          closeModal();
+          return;
+        }
+
+        // 随机选择符合孩子性别的名字
+        const gender = this.tempChild.gender;
+        const maleNames = ['临川', '清扬', '无痕', '墨', '震天', '云峰', '天行', '浩然', '子轩', '文博'];
+        const femaleNames = ['清月', '若雪', '轻舞', '水痕', '火舞', '雨柔', '梦瑶', '诗涵', '雅静', '思雨'];
+        const namePool = gender === '男' ? maleNames : femaleNames;
+        const randomName = namePool[Math.floor(Math.random() * namePool.length)];
+
+        // 更新孩子信息
+        this.tempChild.givenName = randomName;
+        this.tempChild.fullName = this.tempChild.surname + randomName;
+
+        // 添加到子嗣列表
+        if (!this.state.character.children) {
+          this.state.character.children = [];
+        }
+        this.state.character.children.push(this.tempChild);
+
+        // 显示通知
+        const genderText = this.tempChild.gender === '男' ? '男孩' : '女孩';
+        this.showNotification(`🎉 恭喜！您的${genderText} ${this.tempChild.fullName} 诞生了！`, 'success');
+        this.addHistory(`诞下${genderText}：${this.tempChild.fullName}`);
+
+        // 清理临时变量
+        this.tempChild = null;
+
+        // 关闭弹窗
+        closeModal();
+
+        // 更新显示
+        this.updateDisplay();
+        this.save();
+      },
+
+      // 更新子嗣列表
+      updateChildrenList() {
+        const childrenSection = document.getElementById('children-section');
+        const childrenList = document.getElementById('children-list');
+        const children = this.state.character.children || [];
+        
+        if (children.length === 0) {
+          childrenSection.style.display = 'none';
+          return;
+        }
+        
+        childrenSection.style.display = 'block';
+        childrenList.innerHTML = '';
+        
+        // 创建紧凑的内联显示，姓名之间用空格分隔
+        const childNames = children.map((child, index) => {
+          const fullName = child.fullName || (child.surname + (child.givenName || '未取名'));
+          return `<span class="text-gray-800 cursor-pointer hover:text-primary transition-colors" onclick="game.showChildDetail(${child.id})">${fullName}</span>`;
+        }).join(' ');
+        
+        childrenList.innerHTML = `<div class="flex flex-wrap gap-2 text-sm">${childNames}</div>`;
+      },
+
+      // 获取子嗣关系等级
+      getChildRelationship(intimacy) {
+        if (intimacy < 20) {
+          return '陌生';
+        } else if (intimacy < 40) {
+          return '熟悉';
+        } else if (intimacy < 60) {
+          return '亲近';
+        } else if (intimacy < 80) {
+          return '亲密';
+        } else {
+          return '深爱';
+        }
+      },
+
+      // 显示子嗣详情
+      showChildDetail(childId) {
+        const child = this.state.character.children.find(c => c.id === childId);
+        if (!child) {
+          this.showNotification('未找到该子嗣信息', 'error');
+          return;
+        }
+
+        // 确保亲密度属性存在（兼容旧存档）
+        if (child.intimacy === undefined) {
+          child.intimacy = 50;
+        }
+
+        const genderEmoji = child.gender === '男' ? '👶' : '👧';
+        const genderText = child.gender === '男' ? '男' : '女';
+        const fullName = child.fullName || (child.surname + (child.givenName || '未取名'));
+        // 计算年龄：每365天=1岁
+        const daysOld = this.state.day - child.birthDay;
+        const age = Math.floor(daysOld / 365);
+        const fatherName = child.father ? child.father.name : '未知';
+        const fatherTitle = child.father ? child.father.title : '';
+        const intimacy = child.intimacy || 50;
+        const relationship = this.getChildRelationship(intimacy);
+
+        let html = `
+          <div class="space-y-4">
+            <!-- 基本信息 -->
+            <div class="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-4 border border-pink-200">
+              <div class="flex items-center space-x-4 mb-4">
+                <div class="text-5xl">${genderEmoji}</div>
+                <div class="flex-1">
+                  <h3 class="text-2xl font-bold text-gray-800 mb-1">${fullName}</h3>
+                  <div class="text-sm text-gray-600">${genderText}性</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 详细信息 -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200 space-y-3">
+              <h4 class="font-bold text-gray-700 mb-3">📋 详细信息</h4>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">年龄：</span>
+                  <span class="font-medium text-gray-800">${age}岁</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">性别：</span>
+                  <span class="font-medium text-gray-800">${genderText}性</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">亲密度：</span>
+                  <span class="font-medium text-primary">${intimacy} (${relationship})</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">诞生日期：</span>
+                  <span class="font-medium text-gray-800">第${child.birthDay}天</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">生父：</span>
+                  <span class="font-medium text-gray-800">${fatherName}${fatherTitle ? ` (${fatherTitle})` : ''}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 交互选项 -->
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <h4 class="font-bold text-gray-700 mb-3">🎮 交互选项</h4>
+              <div class="space-y-2">
+                <button onclick="game.interactWithChild(${childId})" 
+                        class="w-full bg-primary hover:bg-opacity-90 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors">
+                  💬 与孩子互动
+                </button>
+                <button onclick="game.renameChild(${childId})" 
+                        class="w-full bg-secondary hover:bg-opacity-90 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors">
+                  ✏️ 改名
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const detailContent = document.getElementById('child-detail-content');
+        if (detailContent) {
+          detailContent.innerHTML = html;
+        }
+
+        // 切换到子嗣详情页面
+        showPage('child', null);
+      },
+
+      // 与子嗣互动
+      interactWithChild(childId) {
+        const child = this.state.character.children.find(c => c.id === childId);
+        if (!child) {
+          this.showNotification('未找到该子嗣信息', 'error');
+          return;
+        }
+
+        const genderText = child.gender === '男' ? '男孩' : '女孩';
+        const fullName = child.fullName || (child.surname + (child.givenName || '未取名'));
+        
+        // 计算年龄
+        const daysOld = this.state.day - child.birthDay;
+        const age = Math.floor(daysOld / 365);
+
+        const interactions = [
+          { name: '陪伴', desc: '陪伴孩子，增进感情', type: 'accompany' },
+          { name: '教导', desc: '教导孩子，提升能力', type: 'teach' },
+          { name: '玩耍', desc: '与孩子玩耍，增加快乐', type: 'play' }
+        ];
+
+        let html = `<h3 class="text-lg font-bold mb-4 text-primary">💬 与 ${fullName} 互动</h3>`;
+        html += `<div class="mb-4 p-3 bg-gray-50 rounded-lg">`;
+        html += `<div class="text-sm font-medium">${fullName} (${age}岁${genderText})</div>`;
+        html += `</div><div class="space-y-2">`;
+        
+        interactions.forEach(interaction => {
+          html += `
+            <button onclick="game.doChildInteraction(${JSON.stringify(interaction).replace(/"/g, '&quot;')}, ${childId}); closeModal();" 
+                    class="w-full btn bg-primary hover:bg-secondary text-white text-left p-3 rounded-lg">
+              <div class="font-bold">${interaction.name}</div>
+              <div class="text-xs opacity-90">${interaction.desc}</div>
+            </button>
+          `;
+        });
+        html += '</div>';
+        
+        this.showModal(html);
+      },
+
+      // 执行子嗣互动
+      doChildInteraction(interaction, childId) {
+        const child = this.state.character.children.find(c => c.id === childId);
+        if (!child) {
+          this.showNotification('未找到该子嗣信息', 'error');
+          return;
+        }
+
+        // 确保亲密度属性存在（兼容旧存档）
+        if (child.intimacy === undefined) {
+          child.intimacy = 50;
+        }
+
+        const fullName = child.fullName || (child.surname + (child.givenName || '未取名'));
+        let intimacyGain = 0;
+        
+        switch(interaction.type) {
+          case 'accompany':
+            intimacyGain = 2;
+            child.intimacy = Math.min(100, child.intimacy + intimacyGain);
+            this.showNotification(`你陪伴了${fullName}，感情更加深厚了（亲密度+${intimacyGain}）`, 'success');
+            this.addHistory(`陪伴子嗣：${fullName}，亲密度+${intimacyGain}`);
+            break;
+          case 'teach':
+            intimacyGain = 3;
+            child.intimacy = Math.min(100, child.intimacy + intimacyGain);
+            this.showNotification(`你教导了${fullName}，孩子受益匪浅（亲密度+${intimacyGain}）`, 'success');
+            this.addHistory(`教导子嗣：${fullName}，亲密度+${intimacyGain}`);
+            break;
+          case 'play':
+            intimacyGain = 2;
+            child.intimacy = Math.min(100, child.intimacy + intimacyGain);
+            this.showNotification(`你与${fullName}一起玩耍，大家都很快乐（亲密度+${intimacyGain}）`, 'success');
+            this.addHistory(`与子嗣玩耍：${fullName}，亲密度+${intimacyGain}`);
+            break;
+        }
+
+        // 更新详情页面显示
+        this.showChildDetail(childId);
+      },
+
+      // 子嗣改名
+      renameChild(childId) {
+        const child = this.state.character.children.find(c => c.id === childId);
+        if (!child) {
+          this.showNotification('未找到该子嗣信息', 'error');
+          return;
+        }
+
+        const fullName = child.fullName || (child.surname + (child.givenName || '未取名'));
+        
+        let html = `
+          <div class="text-center">
+            <h3 class="text-lg font-bold mb-4 text-primary">✏️ 为 ${fullName} 改名</h3>
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">姓氏：${child.surname}</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">名字：</label>
+              <input type="text" id="rename-child-input" placeholder="请输入新名字" 
+                     value="${child.givenName || ''}"
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent mb-3">
+              <button onclick="game.randomChildName('${child.gender}')" 
+                      class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium text-sm transition-colors mb-4">
+                🎲 随机选择名字
+              </button>
+            </div>
+          </div>
+        `;
+
+        // 自定义footer
+        const footerArea = document.querySelector('.modal-footer-area');
+        if (footerArea) {
+          footerArea.className = 'modal-footer-area mt-4 flex justify-end space-x-2';
+          footerArea.innerHTML = `
+            <button onclick="game.confirmRenameChild(${childId})" 
+                    class="bg-primary hover:bg-opacity-90 text-white px-6 py-2 rounded-lg font-medium">
+              确认
+            </button>
+            <button onclick="closeModal()" 
+                    class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">
+              取消
+            </button>
+          `;
+        }
+
+        this.showModal(html);
+      },
+
+      // 确认改名
+      confirmRenameChild(childId) {
+        const child = this.state.character.children.find(c => c.id === childId);
+        if (!child) {
+          this.showNotification('未找到该子嗣信息', 'error');
+          return;
+        }
+
+        const nameInput = document.getElementById('rename-child-input');
+        if (!nameInput) {
+          this.showNotification('输入框未找到', 'error');
+          return;
+        }
+
+        const newName = nameInput.value.trim();
+        if (!newName) {
+          this.showNotification('请输入名字', 'error');
+          return;
+        }
+
+        const oldFullName = child.fullName || (child.surname + (child.givenName || '未取名'));
+        child.givenName = newName;
+        child.fullName = child.surname + newName;
+
+        this.showNotification(`已将${oldFullName}改名为${child.fullName}`, 'success');
+        this.addHistory(`为子嗣改名：${oldFullName} → ${child.fullName}`);
+        
+        // 更新显示
+        this.updateChildrenList();
+        this.showChildDetail(childId);
+        
+        closeModal();
+      },
+
+      // 更新NPC列表显示
+      updateNPCList() {
+        const container = document.getElementById('npc-list');
+        container.innerHTML = '';
+        
+        if (this.state.npcs.length === 0) {
+          container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无NPC，外出历练或沐浴可能遇到</p>';
+          return;
+        }
+        
+        // 分类NPC
+        const normalNPCs = this.state.npcs.filter(npc => !npc.category || npc.category === 'normal');
+        const casualNPCs = this.state.npcs.filter(npc => npc.category === 'casual');
+        
+        // 显示普通NPC
+        if (normalNPCs.length > 0) {
+          const normalSection = document.createElement('div');
+          normalSection.className = 'mb-4';
+          normalSection.innerHTML = '<h3 class="text-md font-bold text-primary mb-3">💖 红鸾谱</h3>';
+          container.appendChild(normalSection);
+          
+          normalNPCs.forEach(npc => {
+            this.renderNPCCard(npc, container);
+          });
+        }
+        
+        // 显示萍水相逢NPC
+        if (casualNPCs.length > 0) {
+          const casualSection = document.createElement('div');
+          casualSection.className = 'mt-6 mb-4';
+          casualSection.innerHTML = '<h3 class="text-md font-bold text-purple-600 mb-3">🌊 萍水相逢</h3>';
+          container.appendChild(casualSection);
+          
+          casualNPCs.forEach(npc => {
+            this.renderNPCCard(npc, container);
+          });
+        }
+      },
+      
+      // 渲染NPC卡片
+      renderNPCCard(npc, container) {
+        const card = document.createElement('div');
+        card.className = 'bg-gray-50 rounded-lg p-3 border border-gray-200 mb-3 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md';
+        
+        // 好感度颜色
+        let favorColor = 'text-gray-600';
+        if (npc.favorability >= 80) favorColor = 'text-pink-600';
+        else if (npc.favorability >= 60) favorColor = 'text-purple-600';
+        else if (npc.favorability >= 40) favorColor = 'text-blue-600';
+        else if (npc.favorability < 0) favorColor = 'text-red-600';
+        
+        // 种族标签颜色
+        let raceColor = 'bg-blue-100 text-blue-600';
+        if (npc.race === '魔族') raceColor = 'bg-red-100 text-red-600';
+        else if (npc.race === '妖族') raceColor = 'bg-orange-100 text-orange-600';
+        
+        card.innerHTML = `
+          <div class="flex items-start mb-2">
+            <div class="npc-avatar mr-3">
+              <img src="${npc.avatar || this.npcAvatars[0]}" alt="${npc.name}" class="w-full h-full object-cover">
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-primary text-lg">${npc.name}</h3>
+                ${npc.race ? `<span class="text-xs ${raceColor} px-2 py-0.5 rounded">${npc.race}</span>` : ''}
+              </div>
+              <p class="text-xs text-gray-600">${npc.title}${npc.gender ? `-${npc.gender}` : ''}${npc.age ? `-${npc.age}` : ''}-${npc.appearance}</p>
+              <p class="text-xs text-gray-500 mt-1">修为: ${npc.cultivation}</p>
+              <p class="text-sm ${favorColor} font-bold mt-1">好感度: ${npc.favorability} (${npc.relationship})</p>
+            </div>
+            <span class="text-xs bg-pink-100 text-pink-600 px-2 py-1 rounded">魅力 ${npc.charm}</span>
+          </div>
+          <div class="flex gap-2 mt-2">
+            ${npc.favorability >= 60 ? `<button onclick="game.dualCultivate(game.state.npcs.find(n => n.id === ${npc.id}));" class="flex-1 btn bg-pink-500 text-white text-xs py-1 px-2 rounded hover:bg-pink-600 transition-colors">双修</button>` : ''}
+            ${npc.favorability >= 20 ? `<button onclick="game.extract(game.state.npcs.find(n => n.id === ${npc.id}));" class="flex-1 btn bg-red-500 text-white text-xs py-1 px-2 rounded hover:bg-red-600 transition-colors">采补</button>` : ''}
+            <button onclick="game.interactWithNPC(game.state.npcs.find(n => n.id === ${npc.id}));" class="flex-1 btn bg-primary text-white text-xs py-1 px-2 rounded hover:bg-secondary transition-colors">互动</button>
+          </div>
+        `;
+        container.appendChild(card);
+      },
+      
+      // 与NPC互动
+      interactWithNPC(npc) {
+        const interactions = [
+          { name: '聊天', favorChange: 1, desc: '与NPC聊天，增进感情', type: 'chat' },
+          { name: '赠送礼物', favorChange: 5, desc: '从背包选择物品赠送，大幅提升好感', type: 'gift' },
+          { name: '调戏', favorChange: 3, desc: '调戏NPC，提升好感', type: 'tease' }
+        ];
+        
+        let html = `<h3 class="text-lg font-bold mb-4 text-primary">💬 与 ${npc.name} 互动</h3>`;
+        html += `<div class="mb-4 p-3 bg-gray-50 rounded-lg">`;
+        html += `<div class="flex items-center">`;
+        html += `<div class="npc-avatar mr-3">`;
+        html += `<img src="${npc.avatar || this.npcAvatars[0]}" alt="${npc.name}" class="w-full h-full object-cover">`;
+        html += `</div>`;
+        html += `<div>`;
+        html += `<div class="text-sm font-bold">${npc.name}</div>`;
+        html += `<div class="text-xs text-gray-600 mt-1">${npc.title}${npc.gender ? `-${npc.gender}` : ''}${npc.age ? `-${npc.age}` : ''}-${npc.appearance}</div>`;
+        html += `<div class="text-xs text-gray-500 mt-1">好感度: ${npc.favorability} (${npc.relationship})</div>`;
+        html += `</div>`;
+        html += `</div>`;
+        html += `</div><div class="space-y-2">`;
+        
+        interactions.forEach(interaction => {
+          // 调戏需要好感度≥40
+          if (interaction.type === 'tease' && npc.favorability < 40) {
+            return; // 跳过调戏选项
+          }
+          
+          if (interaction.type === 'gift') {
+            // 赠送礼物按钮，点击后显示物品选择
+            html += `
+              <button onclick="game.showGiftSelection(game.state.npcs.find(n => n.id === ${npc.id}));" 
+                      class="w-full btn bg-primary hover:bg-secondary text-white text-left p-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1">
+                <div class="font-bold">${interaction.name}</div>
+                <div class="text-xs opacity-90">${interaction.desc}</div>
+              </button>
+            `;
+          } else {
+            // 其他互动按钮
+            html += `
+              <button onclick="game.doInteraction(${JSON.stringify(interaction).replace(/"/g, '&quot;')}, game.state.npcs.find(n => n.id === ${npc.id})); closeModal();" 
+                      class="w-full btn bg-primary hover:bg-secondary text-white text-left p-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1">
+                <div class="font-bold">${interaction.name}</div>
+                <div class="text-xs opacity-90">${interaction.desc}</div>
+              </button>
+            `;
+          }
+        });
+        html += '</div>';
+        
+        this.showModal(html);
+      },
+      
+      // 显示礼物选择界面
+      showGiftSelection(npc) {
+        if (!npc) return;
+        
+        // 获取可赠送的物品（排除合欢宗弟子令牌）
+        const giftableItems = this.state.items.filter(item => 
+          item.name !== '合欢宗弟子令牌' && item.count > 0
+        );
+        
+        if (giftableItems.length === 0) {
+          this.showNotification('背包中没有可赠送的物品！', 'danger');
+          closeModal();
+          return;
+        }
+        
+        let html = `<h3 class="text-lg font-bold mb-4 text-primary">🎁 选择要赠送的礼物</h3>`;
+        html += `<div class="mb-4 p-3 bg-gray-50 rounded-lg">`;
+        html += `<div class="flex items-center">`;
+        html += `<div class="npc-avatar mr-3">`;
+        html += `<img src="${npc.avatar || this.npcAvatars[0]}" alt="${npc.name}" class="w-full h-full object-cover">`;
+        html += `</div>`;
+        html += `<div>`;
+        html += `<div class="text-sm font-bold">${npc.name}</div>`;
+        html += `<div class="text-xs text-gray-600 mt-1">${npc.title}${npc.gender ? `-${npc.gender}` : ''}${npc.age ? `-${npc.age}` : ''}-${npc.appearance}</div>`;
+        html += `<div class="text-xs text-gray-500 mt-1">好感度: ${npc.favorability} (${npc.relationship})</div>`;
+        html += `</div>`;
+        html += `</div>`;
+        html += `</div><div class="space-y-2">`;
+        
+        giftableItems.forEach(item => {
+          // 根据物品类型和名称计算好感度加成
+          let favorGain = 5; // 基础好感度
+          let itemIcon = '🎁';
+          
+          // 根据物品类型调整好感度加成
+          if (item.type === '法器') {
+            favorGain = 8;
+            itemIcon = '✨';
+          } else if (item.type === '丹药') {
+            favorGain = 6;
+            itemIcon = '💊';
+          } else if (item.name.includes('香') || item.name.includes('散')) {
+            favorGain = 10;
+            itemIcon = '🌸';
+          }
+          
+          html += `
+            <button onclick="game.giveGift(${JSON.stringify(item).replace(/"/g, '&quot;')}, game.state.npcs.find(n => n.id === ${npc.id})); closeModal();" 
+                    class="w-full btn bg-pink-100 hover:bg-pink-200 text-left p-3 rounded-lg border border-pink-300 transition-all duration-300 transform hover:-translate-y-1">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center">
+                  <span class="text-2xl mr-3">${item.icon || itemIcon}</span>
+                  <div class="flex-1">
+                    <div class="font-bold text-primary">${item.name}</div>
+                    <div class="text-xs text-gray-600">${item.type || '物品'}</div>
+                    <div class="text-xs text-gray-500">${item.desc || ''}</div>
+                    <div class="text-xs text-pink-600 mt-1">预计好感度 +${favorGain}</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-sm font-bold text-gray-700">x${item.count}</div>
+                </div>
+              </div>
+            </button>
+          `;
+        });
+        html += '</div>';
+        
+        this.showModal(html);
+      },
+      
+      // 赠送礼物
+      giveGift(item, npc) {
+        if (!npc || !item) return;
+        
+        // 检查物品是否存在且有数量
+        const inventoryItem = this.state.items.find(i => i.name === item.name);
+        if (!inventoryItem || inventoryItem.count <= 0) {
+          this.showNotification('物品不存在或数量不足！', 'danger');
+          return;
+        }
+        
+        // 计算好感度加成
+        let favorGain = 5; // 基础好感度
+        if (item.type === '法器') {
+          favorGain = 8;
+        } else if (item.type === '丹药') {
+          favorGain = 6;
+        } else if (item.name.includes('香') || item.name.includes('散')) {
+          favorGain = 10;
+        }
+        
+        // 减少物品数量
+        inventoryItem.count--;
+        if (inventoryItem.count <= 0) {
+          const index = this.state.items.indexOf(inventoryItem);
+          if (index > -1) {
+            this.state.items.splice(index, 1);
+          }
+        }
+        
+        // 增加好感度
+        npc.favorability = Math.min(100, Math.max(-100, npc.favorability + favorGain));
+        this.updateNPCRelationship(npc);
+        
+        this.showNotification(`向 ${npc.name} 赠送了 ${item.name}，好感度 +${favorGain}`, 'success');
+        this.addHistory(`向 ${npc.name} 赠送了 ${item.name}`);
+        this.save(); // 赠送礼物后立即保存
+        this.updateDisplay();
+      },
+      
+      // 执行互动（聊天、调戏等）
+      doInteraction(interaction, npc) {
+        if (!npc) return;
+        
+        // 赠送礼物已经单独处理，这里不处理
+        if (interaction.type === 'gift') {
+          return;
+        }
+        
+        npc.favorability = Math.min(100, Math.max(-100, npc.favorability + interaction.favorChange));
+        this.updateNPCRelationship(npc);
+        
+        this.showNotification(`与 ${npc.name} ${interaction.name}，好感度 ${interaction.favorChange > 0 ? '+' : ''}${interaction.favorChange}`, 'success');
+        this.addHistory(`与 ${npc.name} 进行了${interaction.name}`);
+        this.save(); // 互动后立即保存
+        this.updateDisplay();
+      },
+
+      // 更新功法列表
+      updateSkillList() {
+        const container = document.getElementById('skill-list');
+        container.innerHTML = '';
+        
+        this.state.skills.forEach(skill => {
+          const card = document.createElement('div');
+          card.className = 'bg-gray-50 rounded-lg p-3 border border-gray-200 skill-card transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md';
+          card.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="font-bold text-primary">${skill.name}</h3>
+              <span class="text-sm text-gray-600">${skill.level}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div class="stat-bar bg-gradient-to-r from-purple-400 to-purple-600" style="width: ${skill.level}%"></div>
+            </div>
+            <p class="text-xs text-gray-600 mt-2">${skill.desc || '无描述'}</p>
+          `;
+          container.appendChild(card);
+        });
+      },
+
+      // 更新物品列表
+      updateItemList() {
+        const container = document.getElementById('item-list');
+        container.innerHTML = '';
+        
+        if (this.state.items.length === 0) {
+          container.innerHTML = '<p class="text-gray-500 text-center py-4">物品栏为空</p>';
+          return;
+        }
+        
+        this.state.items.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'bg-gray-50 rounded-lg p-3 border border-gray-200 item-card flex items-center';
+          
+          // 根据物品类型设置图标
+          let itemIcon = '🎁';
+          if (item.type === '法器') {
+            itemIcon = '✨';
+          } else if (item.type === '丹药') {
+            itemIcon = '💊';
+          } else if (item.type === '令牌') {
+            itemIcon = '🔖';
+          } else if (item.name.includes('香') || item.name.includes('散')) {
+            itemIcon = '🌸';
+          }
+          
+          card.innerHTML = `
+            <span class="text-2xl mr-3">${item.icon || itemIcon}</span>
+            <div class="flex-1">
+              <h3 class="font-bold text-primary">${item.name}</h3>
+              <p class="text-xs text-gray-600">${item.type || ''}</p>
+              <p class="text-xs text-gray-500">${item.desc || ''}</p>
+            </div>
+            <span class="text-sm font-bold">x${item.count}</span>
+          `;
+          container.appendChild(card);
+        });
+      },
+
+      // 显示当前事件
+      showCurrentEvent() {
+        const events = [
+          '你从鲛绡纱帐中醒来，扫过身侧酣睡的剑宗首席弟子（昨夜双修对象）。窗外飞来师尊传讯符告知你三日后蓬莱仙宴尽是上佳炉鼎。',
+          '你在洞府中打坐，感受到体内灵力流转，修为略有精进。',
+          '合欢宗内门传来消息，有新的修炼资源可以兑换。',
+          '你路过醉梦池，看到几位同门正在沐浴，气氛旖旎。',
+          '师尊召见你，询问近期修炼情况，并传授了一些心得。',
+          '你在藏经阁翻阅古籍，发现了一篇关于双修的秘法。',
+          '宗门大比即将开始，你需要准备参加。',
+          '你收到了一封来自其他宗门的邀请函，邀请你参加他们的庆典。'
+        ];
+        
+        const eventText = events[Math.floor(Math.random() * events.length)];
+        document.getElementById('event-content').innerHTML = `<p>${eventText}</p>`;
+      },
+
+      // 下一回合
+      nextTurn() {
+        this.state.turn++;
+        
+        // 更新时间
+        const times = ['辰时', '巳时', '午时', '未时', '申时', '酉时', '戌时', '亥时', '子时', '丑时', '寅时', '卯时'];
+        const timeIndex = this.state.turn % 12;
+        this.state.time = times[timeIndex];
+        
+        // 每12回合为一天
+        if (this.state.turn % 12 === 0) {
+          this.state.day++;
+          
+          // 怀孕月份增长（每30天增加1个月）
+          if (this.state.character.pregnancy && this.state.character.pregnancy.isPregnant) {
+            // 如果startDay未初始化，设置为当前天数（兼容旧存档）
+            if (!this.state.character.pregnancy.startDay || this.state.character.pregnancy.startDay === 0) {
+              this.state.character.pregnancy.startDay = this.state.day;
+            }
+            
+            const daysPregnant = this.state.day - this.state.character.pregnancy.startDay;
+            const newMonth = Math.min(10, Math.max(1, Math.floor(daysPregnant / 30) + 1));
+            
+            // 检查是否已经满10个月（300天），如果满则立即生产
+            if (daysPregnant >= 300) {
+              this.giveBirth();
+            } else if (newMonth > this.state.character.pregnancy.month) {
+              // 如果月份发生变化，更新并显示通知
+              this.state.character.pregnancy.month = newMonth;
+              if (this.state.character.pregnancy.month >= 10) {
+                // 十月怀胎
+                this.state.character.pregnancy.month = 10;
+                this.showNotification('🤰 你已怀孕10个月，即将生产！', 'info');
+              } else {
+                this.showNotification(`🤰 怀孕进度：${this.state.character.pregnancy.month}月`, 'info');
+              }
+            }
+          }
+        }
+        
+        // 自动恢复
+        if (this.state.turn % 3 === 0) {
+          this.state.character.spiritualPower.current = Math.min(
+            this.state.character.spiritualPower.max,
+            this.state.character.spiritualPower.current + this.state.character.talent * 2
+          );
+        }
+        
+        // 随机事件
+        if (Math.random() < 0.3) {
+          this.triggerRandomEvent();
+        }
+        
+        // 刷新场景
+        this.showCurrentEvent();
+        
+        this.updateDisplay();
+        this.save();
+        this.showNotification('时间推进', 'info');
+      },
+
+      // 下一月（快速流逝一个月时间）
+      nextMonth() {
+        const daysInMonth = 30; // 一个月30天
+        const turnsInMonth = daysInMonth * 12; // 一个月360回合
+        const startDay = this.state.day;
+        const startTurn = this.state.turn;
+        
+        // 记录初始怀孕状态
+        const wasPregnant = this.state.character.pregnancy && this.state.character.pregnancy.isPregnant;
+        const initialPregnancyMonth = wasPregnant ? this.state.character.pregnancy.month : 0;
+        
+        // 快速推进时间
+        for (let i = 0; i < turnsInMonth; i++) {
+          this.state.turn++;
+          
+          // 更新时间
+          const times = ['辰时', '巳时', '午时', '未时', '申时', '酉时', '戌时', '亥时', '子时', '丑时', '寅时', '卯时'];
+          const timeIndex = this.state.turn % 12;
+          this.state.time = times[timeIndex];
+          
+          // 每12回合为一天
+          if (this.state.turn % 12 === 0) {
+            this.state.day++;
+            
+            // 怀孕月份增长（每30天增加1个月）
+            if (this.state.character.pregnancy && this.state.character.pregnancy.isPregnant) {
+              // 如果startDay未初始化，设置为开始流逝前的天数（兼容旧存档）
+              if (!this.state.character.pregnancy.startDay || this.state.character.pregnancy.startDay === 0) {
+                this.state.character.pregnancy.startDay = startDay;
+              }
+              
+              const daysPregnant = this.state.day - this.state.character.pregnancy.startDay;
+              const newMonth = Math.min(10, Math.max(1, Math.floor(daysPregnant / 30) + 1));
+              
+              // 检查是否满10个月（300天），如果满则触发生产
+              if (daysPregnant >= 300 && this.state.character.pregnancy.month >= 10) {
+                this.giveBirth();
+                break; // 生产后跳出循环
+              } else if (newMonth > this.state.character.pregnancy.month) {
+                // 更新怀孕月份
+                this.state.character.pregnancy.month = newMonth;
+              }
+            }
+          }
+          
+          // 自动恢复（每3回合）
+          if (this.state.turn % 3 === 0) {
+            this.state.character.spiritualPower.current = Math.min(
+              this.state.character.spiritualPower.max,
+              this.state.character.spiritualPower.current + this.state.character.talent * 2
+            );
+          }
+        }
+        
+        // 随机事件（一个月30天内，每天有30%概率触发随机事件）
+        // 模拟30天内的随机事件，但限制为最多10次，避免通知过多
+        const daysPassed = daysInMonth;
+        let eventCount = 0;
+        const maxEvents = 10;
+        const eventMessages = [];
+        for (let day = 0; day < daysPassed && eventCount < maxEvents; day++) {
+          if (Math.random() < 0.3) {
+            // 触发随机事件但不显示通知，收集事件信息
+            const event = this.triggerRandomEventSilent();
+            if (event) {
+              eventMessages.push(event);
+              eventCount++;
+            }
+          }
+        }
+        
+        // 刷新场景
+        this.showCurrentEvent();
+        
+        // 更新显示
+        this.updateDisplay();
+        this.save();
+        
+        // 统一显示通知
+        this.showNotification(`⏭️ 时间快速流逝，已过去一个月（${daysInMonth}天）`, 'success');
+        
+        // 检查怀孕状态变化和生产
+        if (this.state.character.pregnancy && this.state.character.pregnancy.isPregnant) {
+          // 检查是否已经满10个月（300天），如果满则触发生产
+          const daysPregnant = this.state.day - this.state.character.pregnancy.startDay;
+          if (daysPregnant >= 300) {
+            this.giveBirth();
+          } else {
+            const currentMonth = this.state.character.pregnancy.month;
+            if (currentMonth > initialPregnancyMonth) {
+              if (currentMonth >= 10) {
+                this.showNotification('🤰 你已怀孕10个月，即将生产！', 'info');
+              } else {
+                this.showNotification(`🤰 怀孕进度：${currentMonth}月`, 'info');
+              }
+            }
+          }
+        }
+        
+        // 显示随机事件摘要（如果有）
+        if (eventMessages.length > 0) {
+          this.showNotification(`📋 期间发生了${eventMessages.length}个随机事件`, 'info');
+        }
+      },
+
+      // 触发随机事件
+      triggerRandomEvent() {
+        const events = [
+          { type: '奇遇', desc: '在洞府中发现古修士遗留的丹药', effect: () => { this.state.character.spiritStones += 100; return '获得100灵石'; } },
+          { type: '奇遇', desc: '感悟天地，悟性提升', effect: () => { this.state.character.wisdom += 2; return '悟性 +2'; } },
+          { type: '危机', desc: '修炼时心魔作祟', effect: () => { this.state.character.physique.current -= 1; return '体魄 -1'; } },
+          { type: '奇遇', desc: '获得灵草', effect: () => { this.state.character.charm += 3; return '魅力 +3'; } },
+          { type: '危机', desc: '被仇家寻仇', effect: () => { this.state.character.lifespan.current -= 3; return '寿元 -3'; } }
+        ];
+        
+        const event = events[Math.floor(Math.random() * events.length)];
+        const result = event.effect();
+        
+        this.showNotification(`${event.type}：${event.desc}，${result}`, event.type === '奇遇' ? 'success' : 'danger');
+        this.addHistory(`随机事件：${event.desc}`);
+      },
+
+      // 触发随机事件（静默版本，不显示通知，返回事件信息）
+      triggerRandomEventSilent() {
+        const events = [
+          { type: '奇遇', desc: '在洞府中发现古修士遗留的丹药', effect: () => { this.state.character.spiritStones += 100; return '获得100灵石'; } },
+          { type: '奇遇', desc: '感悟天地，悟性提升', effect: () => { this.state.character.wisdom += 2; return '悟性 +2'; } },
+          { type: '危机', desc: '修炼时心魔作祟', effect: () => { this.state.character.physique.current -= 1; return '体魄 -1'; } },
+          { type: '奇遇', desc: '获得灵草', effect: () => { this.state.character.charm += 3; return '魅力 +3'; } },
+          { type: '危机', desc: '被仇家寻仇', effect: () => { this.state.character.lifespan.current -= 3; return '寿元 -3'; } }
+        ];
+        
+        const event = events[Math.floor(Math.random() * events.length)];
+        const result = event.effect();
+        
+        // 只添加到历史记录，不显示通知
+        this.addHistory(`随机事件：${event.desc}`);
+        
+        // 返回事件信息
+        return { type: event.type, desc: event.desc, result: result };
+      },
+
+      // 获取时间段
+      getTimeOfDay() {
+        const hour = Math.floor(this.state.turn / 12) % 4;
+        const times = ['清晨', '正午', '傍晚', '深夜'];
+        return times[hour] || '清晨';
+      },
+
+      // 添加历史记录
+      addHistory(text) {
+        this.state.history.unshift(`[第${this.state.day}天·${this.state.time}] ${text}`);
+        if (this.state.history.length > 50) {
+          this.state.history.pop();
+        }
+      },
+
+      // 显示通知
+      showNotification(message, type = 'info') {
+        const notificationArea = document.getElementById('notification-area');
+        const notification = document.createElement('div');
+        notification.className = `notification bg-white rounded-lg p-3 mb-2 card-shadow border-l-4 ${
+          type === 'success' ? 'border-green-500' : 
+          type === 'danger' ? 'border-red-500' : 
+          'border-blue-500'
+        } transform transition-all duration-300`;
+        notification.textContent = message;
+        notificationArea.appendChild(notification);
+
+        setTimeout(() => {
+          notification.style.opacity = '0';
+          notification.style.transform = 'translateY(-10px)';
+          setTimeout(() => notification.remove(), 300);
+        }, 2000);
+      },
+
+      // 显示模态框
+      showModal(html) {
+        const modal = document.getElementById('modal');
+        const content = document.getElementById('modal-content');
+        const footerArea = document.querySelector('.modal-footer-area');
+        
+        // 重置样式，确保其他模态框正常滚动
+        content.style.overflow = '';
+        content.style.height = '';
+        content.innerHTML = html;
+        
+        // 重置 footer 区域为默认状态（只有关闭按钮，右对齐）
+        if (footerArea) {
+          footerArea.className = 'modal-footer-area mt-4 flex justify-end';
+          footerArea.innerHTML = '<button onclick="closeModal()" class="btn bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">关闭</button>';
+        }
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      },
+      
+      // 保存游戏
+      save() {
+        localStorage.setItem('hehuanGame', JSON.stringify(this.state));
+      },
+
+      // 加载游戏
+      load() {
+        const saved = localStorage.getItem('hehuanGame');
+        if (saved) {
+          try {
+            const loadedState = JSON.parse(saved);
+            // 完全替换状态，确保保存的数据不会被默认值覆盖
+            this.state = loadedState;
+            
+            // 确保新功法存在于存档中（兼容旧存档）
+            const requiredSkills = [
+              { name: '姹女心经', level: 0, max: 100, desc: '适合女性修炼的秘法，魅力+5，采补时效果提升15%' },
+              { name: '素女心经', level: 0, max: 100, desc: '上古传下的双修秘法，可与多人同修，效果提升10%' }
+            ];
+            
+            requiredSkills.forEach(requiredSkill => {
+              const existingSkill = this.state.skills.find(s => s.name === requiredSkill.name);
+              if (!existingSkill) {
+                this.state.skills.push(requiredSkill);
+              }
+            });
+            
+            // 确保怀孕属性存在（兼容旧存档）
+            if (!this.state.character.pregnancy) {
+              this.state.character.pregnancy = { isPregnant: false, month: 0, father: null, startDay: 0 };
+            }
+            
+            // 确保子嗣数组存在（兼容旧存档）
+            if (!this.state.character.children) {
+              this.state.character.children = [];
+            }
+            
+            // 确保所有子嗣都有亲密度属性（兼容旧存档）
+            if (this.state.character.children && this.state.character.children.length > 0) {
+              this.state.character.children.forEach(child => {
+                if (child.intimacy === undefined) {
+                  child.intimacy = 50;
+                }
+              });
+            }
+            
+            // 确保所有NPC都有种族和分类属性（兼容旧存档）
+            if (this.state.npcs && this.state.npcs.length > 0) {
+              this.state.npcs.forEach(npc => {
+                if (!npc.race) {
+                  npc.race = '人族';
+                }
+                if (!npc.category) {
+                  // 如果没有category，根据当前好感度判断
+                  // 如果好感度>=100，说明曾经达到过，设为normal；否则设为casual
+                  npc.category = npc.favorability >= 100 ? 'normal' : 'casual';
+                }
+                // 如果category是normal但好感度<100，保持不变（可能曾经达到过100）
+                // 如果category是casual但好感度>=100，升级为normal
+                if (npc.category === 'casual' && npc.favorability >= 100) {
+                  npc.category = 'normal';
+                }
+              });
+            }
+            
+            return true; // 返回true表示有存档
+          } catch (e) {
+            console.error('加载存档失败:', e);
+            // 如果加载失败，清除损坏的存档
+            localStorage.removeItem('hehuanGame');
+            return false;
+          }
+        }
+        return false; // 返回false表示没有存档
+      }
+    };
+    
+    // 关闭模态框
+    function closeModal() {
+      const modal = document.getElementById('modal');
+      const content = document.getElementById('modal-content');
+      const footerArea = document.querySelector('.modal-footer-area');
+      // 重置样式
+      content.style.overflow = '';
+      content.style.height = '';
+      // 恢复footer区域显示
+      if (footerArea) {
+        footerArea.style.display = '';
+      }
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    
+    // 点击模态框外部关闭
+    document.addEventListener('click', (e) => {
+      const modal = document.getElementById('modal');
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // 显示重新开始游戏确认弹框
+    function showRestartGameModal() {
+      const modal = document.getElementById('restart-game-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // 隐藏重新开始游戏确认弹框
+    function hideRestartGameModal() {
+      const modal = document.getElementById('restart-game-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // 重新开始游戏
+    function restartGame() {
+      // 重置游戏状态为初始值
+      game.state = {
+        day: 1,
+        time: '辰时',
+        turn: 0,
+        character: {
+          name: '桃夭',
+          gender: '女',
+          lifespan: { current: 18, max: 100 },
+          constitution: { type: '天生媚骨', desc: '与异性/同性双修时，双方情欲能量纯度+20%' },
+          cultivation: { level: '炼气初期', progress: 75, max: 100 },
+          charm: 70,
+          talent: 15,
+          wisdom: 10,
+          spiritualPower: { current: 20, max: 20 },
+          physique: { current: 20, max: 20 },
+          karma: 0,
+          reputation: { value: 5, desc: '默默无闻' },
+          spiritStones: 500,
+          status: '健康',
+          pregnancy: { isPregnant: false, month: 0, father: null, startDay: 0 },
+          children: []
+        },
+        npcs: [],
+        skills: [
+          { name: '阴阳和合心经', level: 50, max: 100, desc: '合欢宗基础心法，修炼速度+10%' },
+          { name: '姹女心经', level: 0, max: 100, desc: '适合女性修炼的秘法，魅力+5，采补时效果提升15%' },
+          { name: '素女心经', level: 0, max: 100, desc: '上古传下的双修秘法，可与多人同修，效果提升10%' }
+        ],
+        items: [
+          { name: '合欢宗弟子令牌', type: '令牌', count: 1, desc: '合欢宗身份象征' },
+          { name: '媚术铃', type: '法器', count: 1, desc: '使用后可提升魅力' }
+        ],
+        history: []
+      };
+      
+      // 清除本地存储
+      localStorage.removeItem('hehuanGame');
+      
+      // 重新生成初始NPC
+      game.generateRandomNPCs();
+      
+      // 更新显示
+      game.updateDisplay();
+      game.showCurrentEvent();
+      
+      // 隐藏确认弹框
+      hideRestartGameModal();
+      
+      // 显示成功提示
+      game.showNotification('游戏已重新开始！', 'success');
+      
+      // 切换到主页
+      showPage('main', null);
+    }
+
+    // 导出游戏数据
+    function exportGameData() {
+      try {
+        // 创建导出数据对象，包含所有游戏数据
+        const exportData = {
+          state: game.state,
+          exportDate: new Date().toISOString(),
+          version: "1.0"
+        };
+        
+        // 将数据转换为JSON字符串
+        const jsonString = JSON.stringify(exportData, null, 2);
+        
+        // 创建Blob对象
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        
+        // 创建下载链接
+        const url = URL.createObjectURL(blob);
+        
+        // 创建临时下载链接并触发点击
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = `合欢宗修炼模拟器存档_第${game.state.day}天_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // 释放URL对象
+        URL.revokeObjectURL(url);
+        
+        // 显示成功提示
+        game.showNotification('游戏数据已成功导出！', 'success');
+      } catch (error) {
+        console.error('导出数据失败:', error);
+        game.showNotification('导出数据失败，请重试！', 'danger');
+      }
+    }
+
+    // 导入游戏数据
+    function importGameData(event) {
+      try {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        // 验证文件类型
+        const fileName = file.name.toLowerCase();
+        const isValidJsonFile = fileName.endsWith('.json') || 
+                                file.type === 'application/json' || 
+                                file.type === 'text/json' ||
+                                file.type === '';
+        
+        if (!isValidJsonFile) {
+          game.showNotification('请选择JSON格式的存档文件！', 'danger');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const importedData = JSON.parse(e.target.result);
+            
+            // 验证导入数据的结构
+            if (!importedData.state) {
+              game.showNotification('存档文件格式不正确或已损坏！', 'danger');
+              return;
+            }
+            
+            // 显示确认对话框
+            if (confirm('确定要导入此存档吗？当前的游戏进度将被覆盖！')) {
+              // 导入数据
+              game.state = importedData.state;
+              
+              // 确保新功法存在于存档中（兼容旧存档）
+              const requiredSkills = [
+                { name: '姹女心经', level: 0, max: 100, desc: '适合女性修炼的秘法，魅力+5，采补时效果提升15%' },
+                { name: '素女心经', level: 0, max: 100, desc: '上古传下的双修秘法，可与多人同修，效果提升10%' }
+              ];
+              
+              requiredSkills.forEach(requiredSkill => {
+                const existingSkill = game.state.skills.find(s => s.name === requiredSkill.name);
+                if (!existingSkill) {
+                  game.state.skills.push(requiredSkill);
+                }
+              });
+              
+              // 保存数据到本地存储
+              game.save();
+              
+              // 更新显示
+              game.updateDisplay();
+              game.showCurrentEvent();
+              
+              // 显示成功提示
+              game.showNotification('游戏数据已成功导入！', 'success');
+              
+              // 切换到主页
+              showPage('main', null);
+            } else {
+              game.showNotification('已取消导入', 'info');
+            }
+          } catch (error) {
+            console.error('解析导入数据失败:', error);
+            game.showNotification('存档文件解析失败，请检查文件是否完整！', 'danger');
+          }
+        };
+        
+        reader.readAsText(file);
+      } catch (error) {
+        console.error('导入数据失败:', error);
+        game.showNotification('导入数据失败，请重试！', 'danger');
+      } finally {
+        // 清空文件输入，允许重复选择同一文件
+        event.target.value = '';
+      }
+    }
+
+    // 页面切换
+    function showPage(pageId, event) {
+      // 隐藏所有页面
+      document.querySelectorAll('.page-content').forEach(page => {
+        page.classList.remove('active');
+      });
+      
+      // 显示目标页面
+      document.getElementById(`${pageId}-page`).classList.add('active');
+      
+      // 更新导航按钮状态
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active', 'text-primary');
+        btn.classList.add('text-gray-500');
+      });
+      
+      if (event && event.target) {
+        event.target.closest('.nav-btn')?.classList.add('active', 'text-primary');
+      }
+      
+      // 更新显示
+      game.updateDisplay();
+    }
+
+    // 初始化
+    window.addEventListener('DOMContentLoaded', () => {
+      game.init();
+      
+      // 绑定重新开始游戏按钮
+      const restartGameBtn = document.getElementById('restart-game-btn');
+      if (restartGameBtn) {
+        restartGameBtn.addEventListener('click', showRestartGameModal);
+      }
+      
+      // 绑定确认重新开始按钮
+      const confirmRestartBtn = document.getElementById('confirm-restart');
+      if (confirmRestartBtn) {
+        confirmRestartBtn.addEventListener('click', restartGame);
+      }
+      
+      // 绑定取消重新开始按钮
+      const cancelRestartBtn = document.getElementById('cancel-restart');
+      if (cancelRestartBtn) {
+        cancelRestartBtn.addEventListener('click', hideRestartGameModal);
+      }
+      
+      // 绑定导出数据按钮
+      const exportDataBtn = document.getElementById('export-data-btn');
+      if (exportDataBtn) {
+        exportDataBtn.addEventListener('click', exportGameData);
+      }
+      
+      // 绑定导入数据按钮
+      const importDataBtn = document.getElementById('import-data-btn');
+      const importDataFile = document.getElementById('import-data-file');
+      if (importDataBtn && importDataFile) {
+        importDataBtn.addEventListener('click', () => {
+          importDataFile.click();
+        });
+        importDataFile.addEventListener('change', importGameData);
+      }
+      
+      // 点击重新开始游戏确认弹框外部关闭
+      const restartModal = document.getElementById('restart-game-modal');
+      if (restartModal) {
+        restartModal.addEventListener('click', (e) => {
+          if (e.target === restartModal) {
+            hideRestartGameModal();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
